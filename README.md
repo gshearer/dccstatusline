@@ -1,15 +1,149 @@
-# NAME
-dccstatusline - Doc's Claude Code Status Line
+<div align="center">
 
-## Introduction
-dccstatusline - a customizable and lightning fast status line for Claude Code written in pure C.
+# dccstatusline
 
-## DESCRIPTION
-dccstatusline - a customizable and lightning fast status line for Claude Code written in pure C.
+**Doc's Claude Code Status Line — pure C, zero dependencies, ~250 microseconds.**
 
-## BUILD
-See BUILD.md
+[![license: MIT](https://img.shields.io/badge/license-MIT-a6e3a1)](LICENSE)
+![language: C (gnu23)](https://img.shields.io/badge/C-gnu23-89b4fa)
+![dependencies: none](https://img.shields.io/badge/dependencies-none-cba6f7)
+![heap allocations: 0](https://img.shields.io/badge/heap_allocations-0-f38ba8)
+![fuzzed: 3.3M execs](https://img.shields.io/badge/fuzzed-3.3M_execs-89dceb)
 
-## AUTHOR
-Designed by George Shearer (george at shearer dot tech)
-Written by Claude
+<img src="assets/screenshot.svg" alt="dccstatusline in a terminal: default theme and a customized theme" width="860">
+
+</div>
+
+Claude Code redraws its status line on every conversation beat — debounced to
+300 ms, killing any refresh that dawdles. Most status lines answer with a shell
+script that forks `jq`, forks `git`, and hopes. **dccstatusline answers with a
+43 KB C binary that is done in about a quarter of a millisecond**: one read,
+zero forks, zero heap allocations, one write, exit 0.
+
+## What you get
+
+- 🗂️ **cwd** — full, `~`-abbreviated, or basename
+- 🌿 **git branch** — read straight from `.git/HEAD` (worktrees and submodules
+  included), never by spawning `git`; detached HEAD shows the short SHA
+- 🤖 **model** — name, version derived from the model id, and effort level
+  (`Fable 5 ·max`)
+- 🧠 **context** — tokens used, ceiling, and percentage, with digit grouping
+- ⏳ **plan usage** — both rate-limit windows (5-hour and 7-day today), with
+  optional local reset times; the sections are window-agnostic, so if the
+  windows ever change, your config doesn't
+- 🎨 **per-element color** — every token of every section takes its own
+  foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
+- 🧩 **format templates** — reorder and repunctuate each section freely;
+  a token with nothing to show swallows the punctuation before it, so
+  `{name} {ver} ·{effort}` degrades to `Fable 5`, never to `Fable 5 ·`
+- 🪶 **works with no config at all** — the defaults are the screenshot above
+
+## Measured, not promised
+
+| metric | value |
+|---|---|
+| full refresh cycle — spawn, parse, render, exit | **~250 µs** |
+| syscalls per refresh | **49** |
+| heap allocations | **0** |
+| stripped release binary | **43 KB** |
+| libFuzzer executions through the full render path, ASan+UBSan, findings | **3.3 M, zero** |
+
+<sub>2000-run average including process spawn, release build (`-O2`, LTO),
+AMD Ryzen 9 9950X, Linux. Your numbers will vary; the order of magnitude
+won't.</sub>
+
+A failed refresh can never blank your status line: on malformed, truncated, or
+hostile input the binary still prints a fallback line and still exits 0 — a
+guarantee enforced by construction (single exit path) and hammered by fuzzing.
+
+## Quick start
+
+```sh
+git clone https://github.com/gshearer/dccstatusline.git
+cd dccstatusline
+meson setup build-release -Doptimization=2 -Ddebug=false -Db_lto=true --prefix ~/.local
+ninja -C build-release install
+```
+
+Then point Claude Code at it in `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "/home/you/.local/bin/dccstatusline",
+    "padding": 0
+  }
+}
+```
+
+That's it — the defaults need no config file. Full build matrix (dev, ASan,
+fuzzing) lives in [BUILD.md](BUILD.md).
+
+## Configuration
+
+One small INI file at `~/.config/dccstatusline/config` (XDG respected,
+`DCCSTATUSLINE_CONFIG` overrides). Every key optional; parse errors keep that
+key's default rather than breaking your line. The fully commented reference —
+identical to the compiled-in defaults — is
+[`examples/config`](examples/config).
+
+```ini
+[statusline]
+sections  = cwd git model context plan_short plan_long
+separator = " │ "
+
+[git]
+format    = "⎇ {branch}"
+branch_fg = #a6e3a1          # truecolor needs no quoting
+
+[context]
+format  = {label} {used}/{ceiling} {pct}
+label   = ctx
+used_fg = cyan
+pct_fg  = bright_cyan
+
+[plan_long]
+format = {window} {pct} ↻{resets}   # "7d 41% ↻14:30"
+```
+
+| section | tokens |
+|---|---|
+| `cwd` | `{path}` — plus `style = abbrev \| full \| basename` |
+| `git` | `{branch}` |
+| `model` | `{name}` `{ver}` `{effort}` `{id}` |
+| `context` | `{used}` `{ceiling}` `{pct}` |
+| `plan_short` / `plan_long` | `{window}` `{pct}` `{resets}` |
+
+Every section also has `{label}`, filled from its `label =` key, and takes
+`fg`/`bg` for its literal text plus `<token>_fg` / `<token>_bg` per token.
+
+## Under the hood
+
+For the reader who enjoys knowing why it's fast:
+
+- **No fork, ever.** The git branch comes from walking up to `.git` and
+  reading `HEAD` by hand — one `open()` per directory level, worktree
+  `gitdir:` files followed exactly one hop, sha256 repositories understood.
+- **Zero-copy, zero-heap.** The JSON payload is parsed with a pull cursor
+  over the stdin buffer; strings unescape *in place* (every rewrite shrinks,
+  by proof), so rendered values are views, not copies. All buffers are fixed.
+- **Hostile-input hardened.** The JSON skip path is iterative with a depth
+  cap — no recursion for malicious nesting to smash — and unknown fields are
+  skipped wholesale, so new Claude Code payload fields never break an old
+  binary. Both external-input parsers are fuzzed through the entire render
+  path under ASan/UBSan.
+- **Truncation cannot tear.** The output writer saturates at capacity,
+  refuses partial escape sequences, and reserves its final bytes so the
+  closing SGR reset always lands — a torn line can never bleed color into
+  your terminal.
+- **Built strict.** `gnu23`, `-Wall -Wextra -Wpedantic -Werror`,
+  `_FORTIFY_SOURCE=3`, stack protector and clash protection, LTO release,
+  test suites green under AddressSanitizer and UndefinedBehaviorSanitizer.
+
+## License
+
+[MIT](LICENSE) © 2026 George Shearer
+
+**Designed by** George Shearer (george at shearer dot tech) ·
+**Written by** [Claude](https://claude.com/claude-code)

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="196" viewBox="0 0 860 196" role="img" aria-label="dccstatusline rendered in a terminal: the default theme and a customized theme">
+  <!-- window -->
+  <rect x="0.5" y="0.5" width="859" height="195" rx="12" fill="#1e1e2e" stroke="#313244"/>
+  <path d="M 0.5 12.5 A 12 12 0 0 1 12.5 0.5 H 847.5 A 12 12 0 0 1 859.5 12.5 V 34 H 0.5 Z" fill="#181825"/>
+  <line x1="0.5" y1="34" x2="859.5" y2="34" stroke="#313244"/>
+  <circle cx="22" cy="17.5" r="5.5" fill="#f38ba8"/>
+  <circle cx="42" cy="17.5" r="5.5" fill="#f9e2af"/>
+  <circle cx="62" cy="17.5" r="5.5" fill="#a6e3a1"/>
+  <text x="430" y="22" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#6c7086">claude — dccstatusline</text>
+
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" xml:space="preserve">
+    <text x="24" y="70" fill="#585b70"># the default theme — zero configuration</text>
+    <text x="24" y="96"><tspan fill="#89b4fa">~/projects/dccstatusline</tspan><tspan fill="#6c7086"> │ </tspan><tspan fill="#a6e3a1">main</tspan><tspan fill="#6c7086"> │ </tspan><tspan fill="#cba6f7">Fable 5 ·</tspan><tspan fill="#6c7086">max</tspan><tspan fill="#6c7086"> │ ctx </tspan><tspan fill="#74c7ec">16,700</tspan><tspan fill="#6c7086">/200,000 </tspan><tspan fill="#89dceb">8%</tspan><tspan fill="#6c7086"> │ 5h </tspan><tspan fill="#f9e2af">24%</tspan><tspan fill="#6c7086"> │ 7d </tspan><tspan fill="#e5c07b">41%</tspan></text>
+
+    <text x="24" y="140" fill="#585b70"># or make it yours — one small INI file</text>
+    <text x="24" y="166"><tspan fill="#fab387">dccstatusline</tspan><tspan fill="#45475a"> · </tspan><tspan fill="#a6e3a1">⎇ main</tspan><tspan fill="#45475a"> · </tspan><tspan fill="#cba6f7">Fable</tspan><tspan fill="#6c7086">·</tspan><tspan fill="#f38ba8">max</tspan><tspan fill="#45475a"> · </tspan><tspan fill="#89dceb">8%</tspan><tspan fill="#6c7086"> ctx</tspan><tspan fill="#45475a"> · </tspan><tspan fill="#6c7086">5h </tspan><tspan fill="#f9e2af">24%</tspan><tspan fill="#6c7086"> ↻</tspan><tspan fill="#94e2d5">14:30</tspan></text>
+  </g>
+</svg>
