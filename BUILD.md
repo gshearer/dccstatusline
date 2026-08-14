@@ -25,8 +25,22 @@ ninja -C build-dev
 | `build-release` | `meson setup build-release -Doptimization=2 -Ddebug=false -Db_lto=true` | shipping binary: -O2, LTO, `_FORTIFY_SOURCE=3`, stack protections |
 | `build-asan` | `meson setup build-asan -Dbuildtype=debug -Db_sanitize=address,undefined` | the suite must be green here before anything ships |
 | `build-fuzz` | `CC=clang meson setup build-fuzz -Dbuildtype=debug -Db_sanitize=address,undefined -Dfuzz=true` | libFuzzer harnesses for the payload and config parsers |
+| `build-musl` | `CC=musl-gcc meson setup build-musl -Doptimization=2 -Ddebug=false -Db_lto=true -Dc_link_args=-static` | fully static binary (needs the `musl` package) |
 
 Run tests with `meson test -C <dir>`.
+
+## Static release binaries
+
+`.github/workflows/release.yml` builds static x86_64 and aarch64 binaries in
+Alpine containers on every version-tag push and attaches them (with sha256
+sums) to the GitHub release; asset names are unversioned so
+`/releases/latest/download/dccstatusline-<arch>-linux-musl` is a stable URL.
+Backfill an existing tag with `gh workflow run release.yml -f tag=<tag>`.
+
+One honest caveat: `_FORTIFY_SOURCE` is a glibc-headers mechanism, so on musl
+the flag compiles as a no-op — static binaries keep `-fstack-protector-strong`
+and `-fstack-clash-protection` but carry no fortify checks. The glibc release
+build retains all three.
 
 ## Fuzzing
 
