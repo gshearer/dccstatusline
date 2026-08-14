@@ -1,1 +1,6 @@
-# Test suites land chunk by chunk (see TODO.md); wired via meson test().
+# One table-driven suite per module; suites land chunk by chunk (see TODO.md).
+foreach name : ['util', 'color', 'fmt']
+  test(name, executable('test_' + name, 'test_' + name + '.c',
+    include_directories: dcc_inc,
+    link_with: dcccore))
+endforeach

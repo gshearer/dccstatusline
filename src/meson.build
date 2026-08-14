@@ -10,7 +10,15 @@ version_h = custom_target('version.h',
   ],
   build_always_stale: true)
 
+dcc_inc = include_directories('.')
+
+dcccore = static_library('dcccore',
+  'color.c',
+  'fmt.c',
+  'util.c')
+
 dccstatusline = executable('dccstatusline',
   'main.c',
   version_h,
+  link_with: dcccore,
   install: true)
