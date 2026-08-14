@@ -78,8 +78,9 @@ Template semantics:
   override per token. Every styled run is emitted as one SGR sequence starting `0;` —
   each element starts from a clean slate, so state never leaks, even under truncation.
 
-Derivations: model version comes from the model id (`claude-fable-5` → "Fable 5";
-unrecognized shapes leave `{ver}` empty). Context used = `total_input_tokens +
+Derivations: model version comes from the model id (`claude-fable-5` → "5";
+unrecognized shapes leave `{ver}` empty, and so does a `{name}` that already ends
+with the version — `Fable 5`, never `Fable 5 5`). Context used = `total_input_tokens +
 total_output_tokens`; pct = payload's `used_percentage` clamped 0–100, else derived only
 when `context_window_size > 0`.
 

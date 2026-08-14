@@ -114,6 +114,20 @@ derive_ver(char *dst, size_t cap, sv_t id)
   return(out);
 }
 
+// Current payloads carry the version inside display_name ("Fable 5"); older
+// ones did not ("Opus"). {ver} exists for the older shape — when the name
+// already ends with the derived version as its own word, it goes out empty
+// and the swallow rule spares us "Fable 5 5".
+static bool
+name_carries_ver(sv_t name, sv_t ver)
+{
+  if(!ver.n || name.n < ver.n) return(false);
+
+  if(memcmp(name.p + name.n - ver.n, ver.p, ver.n) != 0) return(false);
+
+  return(name.n == ver.n || name.p[name.n - ver.n - 1] == ' ');
+}
+
 static void
 sec_cwd(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
 {
@@ -162,15 +176,19 @@ sec_model(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
   char verbuf[16];
   tokset_t ts = { .n = 0 };
   sv_t name = pay->model_name;
+  sv_t ver;
 
   if(!pay->has_model) return;
 
   if(!name.n) name = pay->model_id;
 
+  ver = derive_ver(verbuf, sizeof verbuf, pay->model_id);
+
+  if(name_carries_ver(name, ver)) ver.n = 0;
+
   add_tok(&ts, SEC_MODEL, cfg, "label", cfg->sec[SEC_MODEL].label);
   add_tok(&ts, SEC_MODEL, cfg, "name", name);
-  add_tok(&ts, SEC_MODEL, cfg, "ver", derive_ver(verbuf, sizeof verbuf,
-                                                 pay->model_id));
+  add_tok(&ts, SEC_MODEL, cfg, "ver", ver);
   add_tok(&ts, SEC_MODEL, cfg, "effort", pay->effort);
   add_tok(&ts, SEC_MODEL, cfg, "id", pay->model_id);
   run_fmt(sb, SEC_MODEL, cfg, &ts);

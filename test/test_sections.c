@@ -18,6 +18,7 @@ static void test_full_line(void);
 static void test_vanishing(void);
 static void test_derived_pct(void);
 static void test_ver_table(void);
+static void test_ver_suppression(void);
 static void test_resets_clock(void);
 static void test_ansi_exact(void);
 
@@ -220,6 +221,43 @@ test_ver_table(void)
 }
 
 static void
+test_ver_suppression(void)
+{
+  static const struct
+  {
+    const char *name, *id, *want;
+  } rows[] =
+  {
+    { "Fable 5", "claude-fable-5",           "Fable 5"  },   // name ends with ver
+    { "Opus",    "claude-opus-4-1-20250805", "Opus 4.1" },   // bare name keeps ver
+    { "4.1",     "claude-opus-4-1-20250805", "4.1"      },   // name IS the ver
+    { "GPT-5",   "claude-fable-5",           "GPT-5 5"  },   // '-' is no word break
+  };
+  config_t cfg;
+  gitinfo_t nogit = { false, "", 0 };
+  char ini[] = "[statusline]\nsections = model\n[model]\nformat = {name} {ver}\n";
+  size_t i;
+
+  config_defaults(&cfg);
+  plain(&cfg);
+  config_load(&cfg, ini, sizeof ini - 1);
+
+  for(i = 0; i < sizeof rows / sizeof rows[0]; i++)
+  {
+    payload_t pay;
+    char out[256];
+    size_t n;
+
+    memset(&pay, 0, sizeof pay);
+    pay.has_model = true;
+    pay.model_name = sv_from_cstr(rows[i].name);
+    pay.model_id = sv_from_cstr(rows[i].id);
+    render_plain(&pay, &cfg, &nogit, out, &n);
+    CHECK_MEM(out, n, rows[i].want);
+  }
+}
+
+static void
 test_resets_clock(void)
 {
   config_t cfg;
@@ -276,6 +314,7 @@ main(void)
   test_vanishing();
   test_derived_pct();
   test_ver_table();
+  test_ver_suppression();
   test_resets_clock();
   test_ansi_exact();
 
