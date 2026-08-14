@@ -10,3 +10,4 @@ Ledger of shipped chunks — one row each. Optional verbose ship notes live in
 | C3 · Parsers | 2026-08-14 | 691e6e0 | json pull cursor (iterative skip, in-place shrink-only unescape), payload map (presence flags, window table), INI config (quote/comment dialect, per-key tolerance, XDG) | — |
 | C4 · Program | 2026-08-14 | 30e2240 | gitinfo (one open/level, gitdir hop), six section producers + assembly, full main, examples/config, posix_spawn CLI harness; 9 suites green everywhere; ~285 µs/cycle | — |
 | C5 · Hardening | 2026-08-14 | ae9e31a | libFuzzer harnesses through the full render path: 2.26M payload + 1.06M config execs under ASan/UBSan, zero findings; 49 syscalls, ~254 µs/cycle | — |
+| C6 · Ship & shine | 2026-08-14 | d40e128 | flagship README with SVG terminal screenshot + badges + measured perf table; binary installed to ~/.local/bin; v0.0.1 complete | — |
