@@ -28,6 +28,20 @@ ninja -C build-dev
 
 Run tests with `meson test -C <dir>`.
 
+## Fuzzing
+
+The fuzz build produces libFuzzer harnesses for the two parsers that face
+external input — the stdin payload (JSON) and the config file (INI) — both
+driven through the full render path under ASan/UBSan. Give each a scratch
+corpus dir first (it receives newly discovered units) and the pristine seeds
+second:
+
+```sh
+mkdir -p /tmp/dccfuzz-payload /tmp/dccfuzz-config
+./build-fuzz/test/fuzz_payload /tmp/dccfuzz-payload test/corpus/payload -max_total_time=60 -max_len=65536
+./build-fuzz/test/fuzz_config  /tmp/dccfuzz-config  test/corpus/config  -max_total_time=60 -max_len=32768
+```
+
 ## Versioning
 
 The build string is `dccstatusline v<version> (build #N)`. N lives in `build_number.txt`
