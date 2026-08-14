@@ -74,13 +74,15 @@ config_defaults(config_t *cfg)
   set_tok_fg(cfg, SEC_CONTEXT, "pct", named16(14));    // bright_cyan
 
   sc = &cfg->sec[SEC_PLAN_SHORT];
-  sc->format = sv_from_cstr("{window} {pct}");
+  sc->format = sv_from_cstr("{window} {pct} \xe2\x86\xbb{resets}");   // "↻"
   sc->fg = dim;
+  sc->resets = RESETS_COUNTDOWN;
   set_tok_fg(cfg, SEC_PLAN_SHORT, "pct", named16(11)); // bright_yellow
 
   sc = &cfg->sec[SEC_PLAN_LONG];
-  sc->format = sv_from_cstr("{window} {pct}");
+  sc->format = sv_from_cstr("{window} {pct} \xe2\x86\xbb{resets}");
   sc->fg = dim;
+  sc->resets = RESETS_COUNTDOWN;
   set_tok_fg(cfg, SEC_PLAN_LONG, "pct", named16(3));   // yellow
 }
 
@@ -245,6 +247,19 @@ token_color(section_cfg_t *sc, const section_desc_t *desc, sv_t key, sv_t value)
 }
 
 static void
+set_resets(section_cfg_t *sc, sv_t value)
+{
+  if(sv_eq_cstr(value, "countdown")) sc->resets = RESETS_COUNTDOWN;
+
+  else if(sv_eq_cstr(value, "clock")) sc->resets = RESETS_CLOCK;
+
+  else if(sv_eq_cstr(value, "clock12")) sc->resets = RESETS_CLOCK12;
+
+  else fprintf(stderr, "dccstatusline: config: bad resets style: %.*s\n",
+               (int)value.n, value.p);
+}
+
+static void
 set_section(config_t *cfg, int id, sv_t key, sv_t value)
 {
   section_cfg_t *sc = &cfg->sec[id];
@@ -256,6 +271,10 @@ set_section(config_t *cfg, int id, sv_t key, sv_t value)
   else if(sv_eq_cstr(key, "fg")) set_color(&sc->fg, key, value);
 
   else if(sv_eq_cstr(key, "bg")) set_color(&sc->bg, key, value);
+
+  else if((id == SEC_PLAN_SHORT || id == SEC_PLAN_LONG)
+          && sv_eq_cstr(key, "resets"))
+    set_resets(sc, value);
 
   else if(id == SEC_CWD && sv_eq_cstr(key, "style"))
   {

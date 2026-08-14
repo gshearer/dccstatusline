@@ -52,17 +52,65 @@ fmt_pct(char *dst, size_t cap, uint32_t pct)
   return(out);
 }
 
+// strftime("%a") would answer in the locale's language and width; this line
+// is English throughout, and the weekday must stay three columns wide.
+static const char *const weekday_name[7] =
+  { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+// The reset as a local wall-clock instant: "19:20", "7:20 PM", and with day
+// set, "Mon 19:20" / "Mon 7:20 PM".
 static sv_t
-fmt_clock(char *dst, size_t cap, int64_t at)
+fmt_clock(char *dst, size_t cap, int64_t at, bool ampm, bool day)
 {
   time_t t = (time_t)at;
   struct tm tm;
   sv_t out = { dst, 0 };
+  char pre[8] = "";
   int n;
 
   if(!localtime_r(&t, &tm)) return(out);
 
-  n = snprintf(dst, cap, "%02d:%02d", tm.tm_hour, tm.tm_min);
+  if(day && tm.tm_wday >= 0 && tm.tm_wday < 7)
+    snprintf(pre, sizeof pre, "%s ", weekday_name[tm.tm_wday]);
+
+  if(ampm)
+  {
+    int h = tm.tm_hour % 12;
+
+    n = snprintf(dst, cap, "%s%d:%02d %s", pre, h ? h : 12, tm.tm_min,
+                 tm.tm_hour < 12 ? "AM" : "PM");
+  }
+
+  else n = snprintf(dst, cap, "%s%02d:%02d", pre, tm.tm_hour, tm.tm_min);
+
+  if(n > 0 && (size_t)n < cap) out.n = (size_t)n;
+
+  return(out);
+}
+
+// Time remaining, floored to the minute: "04:12", and with day set,
+// "03:19:47". A reset already past reads "00:00" rather than counting
+// backwards, and a caller with no clock (now <= 0) renders nothing at all —
+// the swallow rule then takes the literal run with it.
+static sv_t
+fmt_countdown(char *dst, size_t cap, int64_t at, int64_t now, bool day)
+{
+  sv_t out = { dst, 0 };
+  int64_t left;
+  int n;
+
+  if(now <= 0) return(out);
+
+  left = at > now ? at - now : 0;
+
+  if(day)
+    n = snprintf(dst, cap, "%02lld:%02lld:%02lld",
+                 (long long)(left / 86400), (long long)(left % 86400 / 3600),
+                 (long long)(left % 3600 / 60));
+
+  else
+    n = snprintf(dst, cap, "%02lld:%02lld", (long long)(left / 3600),
+                 (long long)(left % 3600 / 60));
 
   if(n > 0 && (size_t)n < cap) out.n = (size_t)n;
 
@@ -232,16 +280,33 @@ sec_context(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
 
 static void
 sec_plan(sbuf_t *sb, const payload_t *pay, const config_t *cfg,
-         plan_slot_t slot, section_id_t id)
+         plan_slot_t slot, section_id_t id, int64_t now)
 {
-  char pctb[8], clock[8];
+  char pctb[8], clock[32];
   tokset_t ts = { .n = 0 };
   const plan_window_t *w = &pay->plan[slot];
+  const bool day = slot == PLAN_LONG;   // only the long window spans days
   sv_t resets = { NULL, 0 };
 
   if(!w->present) return;
 
-  if(w->has_resets) resets = fmt_clock(clock, sizeof clock, w->resets_at);
+  if(w->has_resets)
+  {
+    switch(cfg->sec[id].resets)
+    {
+      case RESETS_COUNTDOWN:
+        resets = fmt_countdown(clock, sizeof clock, w->resets_at, now, day);
+        break;
+
+      case RESETS_CLOCK:
+        resets = fmt_clock(clock, sizeof clock, w->resets_at, false, day);
+        break;
+
+      case RESETS_CLOCK12:
+        resets = fmt_clock(clock, sizeof clock, w->resets_at, true, day);
+        break;
+    }
+  }
 
   add_tok(&ts, id, cfg, "label", cfg->sec[id].label);
   add_tok(&ts, id, cfg, "window", w->window);
@@ -252,7 +317,7 @@ sec_plan(sbuf_t *sb, const payload_t *pay, const config_t *cfg,
 
 static void
 render_section(sbuf_t *sb, section_id_t id, const payload_t *pay,
-               const config_t *cfg, const gitinfo_t *git)
+               const config_t *cfg, const gitinfo_t *git, int64_t now)
 {
   switch(id)
   {
@@ -260,15 +325,15 @@ render_section(sbuf_t *sb, section_id_t id, const payload_t *pay,
     case SEC_GIT:        sec_git(sb, cfg, git); break;
     case SEC_MODEL:      sec_model(sb, pay, cfg); break;
     case SEC_CONTEXT:    sec_context(sb, pay, cfg); break;
-    case SEC_PLAN_SHORT: sec_plan(sb, pay, cfg, PLAN_SHORT, id); break;
-    case SEC_PLAN_LONG:  sec_plan(sb, pay, cfg, PLAN_LONG, id); break;
+    case SEC_PLAN_SHORT: sec_plan(sb, pay, cfg, PLAN_SHORT, id, now); break;
+    case SEC_PLAN_LONG:  sec_plan(sb, pay, cfg, PLAN_LONG, id, now); break;
     case SEC_COUNT:      break;
   }
 }
 
 void
 statusline_render(sbuf_t *out, const payload_t *pay, const config_t *cfg,
-                  const gitinfo_t *git)
+                  const gitinfo_t *git, int64_t now)
 {
   static char scratch_mem[1024];
   size_t i;
@@ -282,7 +347,7 @@ statusline_render(sbuf_t *out, const payload_t *pay, const config_t *cfg,
     if(id >= SEC_COUNT) continue;
 
     sbuf_init(&scratch, scratch_mem, sizeof scratch_mem, 0);
-    render_section(&scratch, id, pay, cfg, git);
+    render_section(&scratch, id, pay, cfg, git, now);
 
     if(!scratch.len) continue;
 

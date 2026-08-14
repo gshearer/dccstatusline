@@ -9,9 +9,21 @@
 
 #include "check.h"
 
+// The clock the reset cases are written against: Sat 2025-02-01 12:00:00 UTC,
+// with the two absolute stamps they compare into. TZ is pinned to UTC before
+// any of them render.
+#define TEST_NOW 1738411200
+#define SAT_1600 1738425600
+#define SUN_0000 1738454400
+#define M 60
+#define H 3600
+#define D 86400
+
 static void plain(config_t *);
 static size_t strip_sgr(const char *, size_t, char *);
 static payload_t sample(void);
+static void render_at(const payload_t *, const config_t *, const gitinfo_t *,
+                      int64_t, char *, size_t *);
 static void render_plain(const payload_t *, const config_t *,
                          const gitinfo_t *, char *, size_t *);
 static void test_full_line(void);
@@ -19,7 +31,8 @@ static void test_vanishing(void);
 static void test_derived_pct(void);
 static void test_ver_table(void);
 static void test_ver_suppression(void);
-static void test_resets_clock(void);
+static void test_resets_styles(void);
+static void test_resets_default(void);
 static void test_ansi_exact(void);
 
 // Colors off everywhere: expectations read as plain text. SGR bytes are
@@ -98,15 +111,24 @@ sample(void)
 }
 
 static void
-render_plain(const payload_t *pay, const config_t *cfg, const gitinfo_t *git,
-             char *out, size_t *outn)
+render_at(const payload_t *pay, const config_t *cfg, const gitinfo_t *git,
+          int64_t now, char *out, size_t *outn)
 {
   static char mem[4096];
   sbuf_t sb;
 
   sbuf_init(&sb, mem, sizeof mem, 0);
-  statusline_render(&sb, pay, cfg, git);
+  statusline_render(&sb, pay, cfg, git, now);
   *outn = strip_sgr(sb.p, sb.len, out);
+}
+
+// Cases with nothing time-dependent to say still need a clock; they get the
+// same fixed one.
+static void
+render_plain(const payload_t *pay, const config_t *cfg, const gitinfo_t *git,
+             char *out, size_t *outn)
+{
+  render_at(pay, cfg, git, TEST_NOW, out, outn);
 }
 
 static void
@@ -257,36 +279,97 @@ test_ver_suppression(void)
   }
 }
 
+// Every reset style, both windows. Times are stated as offsets from TEST_NOW
+// (Sat 2025-02-01 12:00:00 UTC) so the arithmetic reads at a glance; the two
+// absolute stamps are that same Saturday at 16:00 and the Sunday midnight
+// after it, which pin the AM/PM turn.
 static void
-test_resets_clock(void)
+test_resets_styles(void)
+{
+  static const struct
+  {
+    bool longw;         // plan_long: gains the weekday, counts days
+    const char *style;
+    int64_t at, now;
+    const char *want;
+  } rows[] =
+  {
+    { false, "countdown", TEST_NOW + 4 * H + 12 * M,      TEST_NOW, "5h 24% 04:12"     },
+    { false, "countdown", TEST_NOW + 4 * H + 12 * M + 59, TEST_NOW, "5h 24% 04:12"     },
+    { false, "countdown", TEST_NOW - 60,                  TEST_NOW, "5h 24% 00:00"     },
+    { false, "countdown", TEST_NOW + 4 * H,               0,        "5h 24%"           },
+    { true,  "countdown", TEST_NOW + 3 * D + 19 * H + 47 * M, TEST_NOW, "7d 41% 03:19:47" },
+    { true,  "countdown", TEST_NOW + 5 * M,               TEST_NOW, "7d 41% 00:00:05"  },
+    { false, "clock",     SAT_1600,                       TEST_NOW, "5h 24% 16:00"     },
+    { true,  "clock",     SAT_1600,                       TEST_NOW, "7d 41% Sat 16:00" },
+    { false, "clock12",   SAT_1600,                       TEST_NOW, "5h 24% 4:00 PM"   },
+    { true,  "clock12",   SAT_1600,                       TEST_NOW, "7d 41% Sat 4:00 PM" },
+    { false, "clock12",   SUN_0000,                       TEST_NOW, "5h 24% 12:00 AM"  },
+    { false, "clock12",   TEST_NOW,                       TEST_NOW, "5h 24% 12:00 PM"  },
+  };
+  size_t i;
+
+  CHECK(setenv("TZ", "UTC", 1) == 0, "setenv TZ");
+  tzset();
+
+  for(i = 0; i < sizeof rows / sizeof rows[0]; i++)
+  {
+    const char *name = rows[i].longw ? "plan_long" : "plan_short";
+    plan_slot_t slot = rows[i].longw ? PLAN_LONG : PLAN_SHORT;
+    config_t cfg;
+    payload_t pay;
+    gitinfo_t nogit = { false, "", 0 };
+    char ini[256], out[256];
+    size_t n;
+    int len = snprintf(ini, sizeof ini,
+                       "[statusline]\nsections = %s\n"
+                       "[%s]\nformat = {window} {pct} {resets}\nresets = %s\n",
+                       name, name, rows[i].style);
+
+    CHECK(len > 0 && (size_t)len < sizeof ini, "row %zu: ini fits", i);
+
+    memset(&pay, 0, sizeof pay);
+    pay.plan[slot].present = true;
+    pay.plan[slot].pct = rows[i].longw ? 41 : 24;
+    pay.plan[slot].window = sv_from_cstr(rows[i].longw ? "7d" : "5h");
+    pay.plan[slot].has_resets = true;
+    pay.plan[slot].resets_at = rows[i].at;
+
+    config_defaults(&cfg);
+    plain(&cfg);
+    config_load(&cfg, ini, (size_t)len);
+    render_at(&pay, &cfg, &nogit, rows[i].now, out, &n);
+    CHECK_MEM(out, n, rows[i].want);
+  }
+}
+
+// The shipped default carries ↻{resets} and counts down; a window with no
+// reset stamp still renders, the token and its literal run swallowed.
+static void
+test_resets_default(void)
 {
   config_t cfg;
   payload_t pay;
   gitinfo_t nogit = { false, "", 0 };
-  char ini[] = "[statusline]\nsections = plan_short\n"
-               "[plan_short]\nformat = {window} {pct} {resets}\n";
+  char ini[] = "[statusline]\nsections = plan_short\n";
   char out[256];
   size_t n;
-
-  CHECK(setenv("TZ", "UTC", 1) == 0, "setenv TZ");
-  tzset();
 
   memset(&pay, 0, sizeof pay);
   pay.plan[PLAN_SHORT].present = true;
   pay.plan[PLAN_SHORT].pct = 24;
   pay.plan[PLAN_SHORT].window = sv_from_cstr("5h");
-  pay.plan[PLAN_SHORT].has_resets = true;
-  pay.plan[PLAN_SHORT].resets_at = 3600;
 
   config_defaults(&cfg);
   plain(&cfg);
   config_load(&cfg, ini, sizeof ini - 1);
-  render_plain(&pay, &cfg, &nogit, out, &n);
-  CHECK_MEM(out, n, "5h 24% 01:00");
+  render_at(&pay, &cfg, &nogit, TEST_NOW, out, &n);
+  CHECK_MEM(out, n, "5h 24%");
 
-  pay.plan[PLAN_SHORT].resets_at = 86399;
-  render_plain(&pay, &cfg, &nogit, out, &n);
-  CHECK_MEM(out, n, "5h 24% 23:59");
+  pay.plan[PLAN_SHORT].has_resets = true;
+  pay.plan[PLAN_SHORT].resets_at = TEST_NOW + 2 * H + 5 * M;
+  render_at(&pay, &cfg, &nogit, TEST_NOW, out, &n);
+  CHECK_MEM(out, n, "5h 24% \xe2\x86\xbb""02:05");
 }
 
 static void
@@ -303,7 +386,7 @@ test_ansi_exact(void)
   config_defaults(&cfg);   // git default: bright_green fg, no token override
   config_load(&cfg, ini, sizeof ini - 1);
   sbuf_init(&sb, mem, sizeof mem, 0);
-  statusline_render(&sb, &pay, &cfg, &git);
+  statusline_render(&sb, &pay, &cfg, &git, TEST_NOW);
   CHECK_MEM(sb.p, sb.len, "\x1b[0;92mmain");
 }
 
@@ -315,7 +398,8 @@ main(void)
   test_derived_pct();
   test_ver_table();
   test_ver_suppression();
-  test_resets_clock();
+  test_resets_styles();
+  test_resets_default();
   test_ansi_exact();
 
   return(check_failures ? 1 : 0);

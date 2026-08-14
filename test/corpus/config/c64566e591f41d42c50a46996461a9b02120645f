@@ -1,0 +1,58 @@
+# _fg =
+ yeollw
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻i= bright_black
+used_fg = cyan
+pct_fg  = br{pct}ight_cyan
+
+# ── plan usage ��────────────────────────────�ght_black
+used_fg = cyanllow
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bb}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = {ver�{effort}
+fg     = bright_magenta
+br~dow} {pct} ↻i= bright_black
+used_fg = cyan
+pct_fg  = br�──────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {an
+pct_fg  = br{pct}ight_cyan
+
+# ── plan usage ─�.�───────────────────────────────────────────�g�ht_black
+used_fg = cyanllow
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_he loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bb�uelack
+pct_fg = br~dow} {pct} ↻i= bright_t}
+fg     = bright_black
+pct_fg =
+ yellow
+# To appenlabel} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻i= bright_black
+used_fg = cyan
+pct_fg  = br{pct}ight_cyan
+
+# ── plan usage ────────────────────────────────────mat = {window} {pct} ↻{resets}

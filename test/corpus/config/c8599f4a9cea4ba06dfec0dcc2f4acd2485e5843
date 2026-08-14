@@ -1,0 +1,6 @@
+t ke1.
+
+[statusline]
+# Ansed.
+sections  = cwd git a[
+re}{p

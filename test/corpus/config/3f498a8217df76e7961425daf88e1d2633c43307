@@ -1,0 +1,65 @@
+# dccstatusline â€” reference configuration
+#
+# This file documents the compiled-in defaults: with no käiâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€âken,
+# filled from its `label` key.
+
+[statusline]t plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_blaâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit grouping for token counts. €â”€â”€â”€â”€â”€â”€â”€â”€€””âââ€”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ontext plan_short plan_long
+separator = " â”‚ "
+separatoryle_fg = bright_black
+# Digit grouping for token count€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€âken,
+# filled from its `label` key.
+
+[statut plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_blaâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit grouping for token counts. €â”€â”€â”€â”€â”€â”€â”€â”€€””âââ€”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+€€€€€€€‚€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ontext plan_short plan_lon€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ontext plan_short plan_long
+separator = " â”‚ "
+separatoryle_fg = bright_black
+# Digit grouping for token count€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€âken,
+# filled from its `label` key.
+
+[statut plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_blaâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit grouping for token counts. €â”€â”€â”€â”€â”€â”€â”€â”€€””âââ€”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ontext plan_short plan_long
+separator = " â”‚ "
+separatoryle_fg = bright_black
+# Digit grouping for token count€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â+en,
+# filled from its `label` key.
+
+[statusline]t plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_blaâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit g”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â
+separator_fg = brig”€â”€â”€â”€âom its `label` key.
+
+[statusline]t plan_short plan_sline]t plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_blaâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ue a comment stort plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit g”€â”€â”€â”€”€â”€â”€â”€â”€â”€â”€â”€â
+separa# Digit groupint_black
+pcu_fg = yellow
+# To append the local reset time:
+# format = {window} {pÿ	} â†»{resets}

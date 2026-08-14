@@ -51,7 +51,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
   pay.plan[PLAN_LONG].window = sv_from_cstr("7d");
 
   sbuf_init(&sb, line, sizeof line, 5);
-  statusline_render(&sb, &pay, &cfg, &git);
+  statusline_render(&sb, &pay, &cfg, &git, 1738411200);   // fixed: no wall clock in a fuzz run
 
   if(sb.len > sizeof line - 5) __builtin_trap();   // reserve invariant
 

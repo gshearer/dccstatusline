@@ -63,7 +63,7 @@ Each section renders a `format` template. Tokens:
 | `git` | `{branch}` |
 | `model` | `{name}` `{ver}` `{effort}` `{id}` |
 | `context` | `{used}` `{ceiling}` `{pct}` |
-| `plan_short` / `plan_long` | `{pct}` `{resets}` (HH:MM local) `{window}` ("5h"/"7d" today) |
+| `plan_short` / `plan_long` | `{pct}` `{resets}` (+ key `resets = countdown\|clock\|clock12`) `{window}` ("5h"/"7d" today) |
 | all | `{label}` (text from the section's `label =` key) |
 
 Template semantics:

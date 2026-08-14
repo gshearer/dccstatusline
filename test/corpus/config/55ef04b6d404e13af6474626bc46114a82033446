@@ -1,0 +1,9 @@
+lled its `label` key.
+
+[statusline]
+# A+ny # separatcluded.
+sections  = ±±±±cwd git _srhot plan_long
+on
+#
+separator = " â”‚ .
+separator_ give literal ne 

@@ -15,6 +15,16 @@ typedef enum
   CWD_BASENAME,
 } cwd_style_t;
 
+// How {resets} renders. The countdown is time remaining; the clock styles are
+// the local instant of the reset itself. The long window prefixes its weekday
+// and counts down in days, since "19:00" alone cannot say which of seven.
+typedef enum
+{
+  RESETS_COUNTDOWN = 0,
+  RESETS_CLOCK,
+  RESETS_CLOCK12,
+} resets_style_t;
+
 typedef struct
 {
   sv_t format;
@@ -22,6 +32,7 @@ typedef struct
   color_t fg, bg;                    // base style: literals and un-overridden tokens
   color_t tok_fg[DCC_MAX_TOKENS];    // indexed per dcc_sections token order
   color_t tok_bg[DCC_MAX_TOKENS];
+  resets_style_t resets;             // plan sections only
 } section_cfg_t;
 
 typedef struct
@@ -55,6 +66,7 @@ static sv_t parse_value(char *, size_t);
 static sv_t trim(sv_t);
 static void set_global(config_t *, sv_t, sv_t);
 static void set_section(config_t *, int, sv_t, sv_t);
+static void set_resets(section_cfg_t *, sv_t);
 static bool token_color(section_cfg_t *, const section_desc_t *, sv_t, sv_t);
 static void set_color(color_t *, sv_t, sv_t);
 static void parse_order(config_t *, sv_t);

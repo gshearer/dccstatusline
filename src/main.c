@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -123,9 +124,14 @@ main(int argc, char **argv)
 
   if(payload_parse(stdin_buf, n, &pay))
   {
+    struct timespec ts;
+    int64_t now = 0;   // no clock: the countdowns render empty, the line stands
+
+    if(clock_gettime(CLOCK_REALTIME, &ts) == 0) now = (int64_t)ts.tv_sec;
+
     if(pay.has_cwd && want_git(&cfg)) gitinfo_read(pay.cwd, &git);
 
-    statusline_render(&line, &pay, &cfg, &git);
+    statusline_render(&line, &pay, &cfg, &git, now);
   }
 
   if(!line.len)

@@ -1,0 +1,6 @@
+# dcc¸¸¸¸¸¸
+[plan_short]
+for
+pct_fg =5
+ t id= {window} {pct}
+fal reset 

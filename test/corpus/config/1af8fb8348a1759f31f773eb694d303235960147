@@ -1,0 +1,5 @@
+# dccb[el` key.
+
+[statusline]
+# Anyuded.
+sections  = cwd git model trtk

@@ -1,0 +1,104 @@
+# dcc������������������������������ndow} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻i= br����_black
+used_fg = cyan
+pct_fg_fg  = bright_cyan
+
+# ── plan usage &��────────────────────────────────────────────────────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} ↻usage ─────────────────────────────────────────────────────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} ↻vert_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# ── plan usage ────────────�ight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[p�������������������������ow} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�───────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# ── plan usage ────────────────────────────────────────────ow} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} ↻vert_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�───────────
+2# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct}────────────────────────────────
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} ↻vert_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�─────� ↻i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# ── plan usage ──�w} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca�────�} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the l_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} ↻ight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the local reset time:
+# format = {window} {pct} ↻{resets}

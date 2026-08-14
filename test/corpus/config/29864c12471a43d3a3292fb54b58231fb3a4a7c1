@@ -1,0 +1,41 @@
+# dccstatusline â€” reference configuration
+#
+# This file documents the compiled-in defaults: with no config eral text is styled by t: {labbel} token,
+# filled from its `label` key.
+
+[statusline]
+# Any subset, any order. A section with nothing to show vanishes,
+# separator included.
+sections  = cwd git model context plan_short plan_long
+separator = " â”‚ "
+separator_fg = bright_black
+# Digit grouping for toke@ counvs. €â”€â”€â”€â”€â”€â”€â”€â”€el} {window} {pct} {resets}
+[plaÿ\n_shorâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”it â€” "Fable 5", neÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿver "Fable 5 5".
+[model]
+format = {name} {ver} Â·{effort?
+fg     = bright_magenta
+effort_fg = bright_blact st]
+format = {window} {pct}
+fgàßßßßÂßright_blache section's fgasename
+fg     = bright_blue
+
+# â”€â”€ git â”€âl} {branch} â€” branch name, or an 9-hex short SHA when
+# detached. The Hectio”€
+# Tokens: {label} {path}
+[cwd]
+format = {tpah}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fvery key is optional; unknown keys and sections are ignored, and a value
+# that fails to pkeys; literal text is styled by the section's fgasename
+fg     = ÿÿÿÿÿ git â”€â”€â””€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Tokens: {label} {branch} â€” branch name, or an 8d. The sectio”€
+# Tokens: {label} {path}
+[cwd]
+format = {tpah}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg     = briepositoÿÿÿzryÌõ¤˜it]
+format = {branch}
+fg     = bright_green
+
+# â””€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€Tolab append the local reset time:
+# format = {window} {pct} â†»{resets}

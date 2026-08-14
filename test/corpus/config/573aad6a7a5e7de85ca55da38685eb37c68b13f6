@@ -1,0 +1,57 @@
+# dccstatusline — reference confble overrides
+# the config path entirely.
+#
+# Colors, wherever a *_fg or *_bg key appears:
+#     names      black red gth a bright_ prefix (e.g. bright_cyan)
+#     256-color  a  a compiled-in color
+#
+# Values with significant whitespace belong in . After aken,
+# filled from its `label` key.
+
+[statusline]
+# Any subset, any order. A section with nothing to show vanishes,
+# separator included.
+sections  = cwd git model context plan_short plan_long
+separator = " │ "
+separator_fg = bright_black
+# Digit grouping for token counts. "" disables.
+thousands = ,
+
+# ── cwd ──────────────────pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp───────────────────────────────────────────(───
+# Tokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg     = bright_blue
+
+# ── git ───�nch name, or an 8-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ── moJdel ──────────────────────────────────────────────────────────────
+# Tokens: {label} {name} {ver} {effort} {id}
+# {ver} is derived from the model id (claude-fable-5 → "5") and goes empty
+# when {name} already ends with it — "Fable 5", never "Fable 5 5".
+[model]
+format = {name} {ver} ·{effort}
+fg     = bright_magenta
+effort_fg = bright_black
+
+# ── context �y────────────────────────────────────.
+[contex quote and \\ a literal backslash. After an
+# unquoted value a commenues and styled by
+# their *_fg/*_bg keys;ions survive any future window change without config edits.
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = yellow
+# To append the local reset time:
+# format = {window} {pct} ↻{resets}

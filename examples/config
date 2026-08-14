@@ -78,14 +78,23 @@ pct_fg  = bright_cyan
 # 7-day today). {window} renders the current tag ("5h"/"7d"), so these
 # sections survive any future window change without config edits.
 # Tokens: {label} {window} {pct} {resets}
+#
+# The `resets` key picks what {resets} says:
+#     countdown  time left — "04:12" (HH:MM), "03:19:47" (DD:HH:MM) in
+#                the long window
+#     clock      the local reset time, 24-hour — "19:20", "Mon 19:20"
+#     clock12    the same in 12-hour — "7:20 PM", "Mon 7:20 PM"
+# The long window carries the weekday and the day count: one bare time
+# cannot say which of seven days it means. A window that reports no reset
+# renders nothing at all, ↻ included.
 [plan_short]
-format = {window} {pct}
+format = {window} {pct} ↻{resets}
+resets = countdown
 fg     = bright_black
 pct_fg = bright_yellow
 
 [plan_long]
-format = {window} {pct}
+format = {window} {pct} ↻{resets}
+resets = countdown
 fg     = bright_black
 pct_fg = yellow
-# To append the local reset time:
-# format = {window} {pct} ↻{resets}

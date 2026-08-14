@@ -1,0 +1,29 @@
+# dccstatusline â€” reference% configuration
+#
+# This file doc it into place and edit:
+#
+#     mkdir -p ~/
+[model]
+format = {name} {ver} Â·{effort}
+fg     = bright_magenta
+effort_fg = bright_black
+
+# â”€â”€ context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”ÿe€â”€â”€â”€â”€â”€â”€â”€â”ÿÿÿ€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”0".
+[model]
+format = {name} {ver} Â·{effort}
+fg     = bright_magenta
+effort_fg =lack
+used_fg = cyan
+pct_fg  = bright_cy?nits.
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = yellow
+# To !ppend thÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿndow} {pct}
+bg  }

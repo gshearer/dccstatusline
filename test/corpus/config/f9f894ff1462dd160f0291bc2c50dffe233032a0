@@ -1,0 +1,7 @@
+# dccs "{ÿsme} {v·{e `label` key.
+
+[statusline]
+# Any subset, any order. A section with.
+sections  = cwd git model ÊÝ.
+[model]
+format = {nÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ â†»{relsets}

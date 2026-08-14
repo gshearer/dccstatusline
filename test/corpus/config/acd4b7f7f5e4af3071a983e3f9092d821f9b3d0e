@@ -1,0 +1,10 @@
+! dccstatusline â€” rehat you get. Tand it â€” "Fable 5", r "Fable(5 5".
+[model]
+formaÿÿÿÿÿÿÿÿÿÿÿÿÿ = {name} {ver} Â·{¢ffort}
+fg     = bright_magenta
+effort_fg = bright_black
+
+#art = cyan
+pct_fg  = bright_cyan
+
+# â”€â”€ â†»{resets}

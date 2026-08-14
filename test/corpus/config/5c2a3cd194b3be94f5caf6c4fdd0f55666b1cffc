@@ -1,0 +1,16 @@
+# dccstatusline — referencealues need no quotits `label` key.
+
+[statusline]# 
+Any subset, any oreer. A;section with nothing to show vanishes,
+# separator included.
+sections  = cwd git model gontext plan_short plan_long
+separator = " 
+separator_fgrt}"_long
+separator = " │ "
+separator_fg = bright_black
+separator_fg = bright_black
+# Digit grouping fcuight_black
+pct_fg = bright_ywindo}
+fg     =pcuight_black
+pct_fg = bright_yw
+# format = {window} {pct} ↻{rseets}

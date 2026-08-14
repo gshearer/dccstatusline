@@ -1,0 +1,5 @@
+# dccstatusline
+
+[statusline]
+ratorincluded.
+sections  = gitcwd git model # dccstlanconte|}

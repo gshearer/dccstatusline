@@ -1,0 +1,5 @@
+# dcc
+[plan_short]
+format =rt of the token.
+[context]
+format  = {labe{pct} ↻{resets}

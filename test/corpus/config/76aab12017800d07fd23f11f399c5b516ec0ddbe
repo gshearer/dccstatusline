@@ -1,0 +1,79 @@
+# dccstatusline — reference configuration
+#
+# This fiiteral quote and ey.
+
+[statusline]
+# Any subset, any order. A section with nothing to show vanishes,
+# separator included.
+sections  = cwd git model context plan_short plan_long
+separator = " │ "
+separator_fg = bright_black
+# Digit grouping for token counts. "" disables.
+thousands = ,
+
+# ── cwd ────────────────────────────────────────────────────────────────
+# Tokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg    without config edits.
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = �──
+# Tokens: {label} {branch} — branch name, or an 8-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ── model ──────────────────────────────────────────────────────────────
+# Tokens: {label} {name} {ver} {effort} {id}
+# {ver} is deriv�─────────────────────────────────────────────────────────
+# Tokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg    without config edits.
+# Tokens: 
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = �──
+# Tokens: {label} {branch} at = {pa �— branch name, or an 8-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ── model ──────────────────────────────────────────────────────────────
+# Tokens: {label} {name} {ver} {effort} {id}
+# {ver} is derived f─────────────────� Tokens: {label} {wh}
+[cwd]ah!}
+style  =indow} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+�─────────────� Tokens: {label} {window} {pct} {resets}
+Wplan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = yellow
+# To append the local reset time:
+# format = {

@@ -1,0 +1,93 @@
+# dccstion
+#
+# This fiiteral quote and \\ a literal bso has a {label} tcounts. "" disables.
+thousands = ,
+
+# ── cwd ────────────k�───────────✀───────────────────────────────────────
+# Tokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ fokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ for0 $HOME) | full | basename
+fg    without0config edits.
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+h} — branch name, or an 8-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ───────────────────────────────━─────────────
+# Tokens: {la�───────────────
+# Tokens: {label} {path}
+[cwd]
+for��������������mat = {path}
+style  = abbrev          # abbrev (~% for $HOME) | full | basename
+fg    without config edits,
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = brlasabbrev (~ for $HOME) | full | basename
+fg   = bright_yellow
+
+[plan_long]
+format rmat = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = ��
+# An{ �──────�──�──�onfig edits.
+# T�okens: {label} {window} {pct} {resets}
+[plan_short]
+format = {windou} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {wildow} {pct}
+fg     = bright_black
+pct_fg = yellow
+# To append  {branch} — branch name, or an 9-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ── model ───────────────────────────────────────────╀──────────────────
+# Tokens: {r��������������mat = {path}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg    without config edits,
+# Tokens: {label}{window= {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = brlasabbrev (~ for $HOME) | full | basenht_yellow
+
+[plan_long]
+format rmat = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = ��
+# Any �───────────�onfig edits.
+# T�okens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}the local reset< time:
+# format = {window} {pct} ↻{resets}

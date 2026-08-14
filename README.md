@@ -28,9 +28,10 @@ zero forks, zero heap allocations, one write, exit 0.
 - 🤖 **model** — name, version derived from the model id, and effort level
   (`Fable 5 ·max`)
 - 🧠 **context** — tokens used, ceiling, and percentage, with digit grouping
-- ⏳ **plan usage** — both rate-limit windows (5-hour and 7-day today), with
-  optional local reset times; the sections are window-agnostic, so if the
-  windows ever change, your config doesn't
+- ⏳ **plan usage** — both rate-limit windows (5-hour and 7-day today),
+  counting down to the reset (`↻04:12`) or showing its local time in 24- or
+  12-hour form; the sections are window-agnostic, so if the windows ever
+  change, your config doesn't
 - 🎨 **per-element color** — every token of every section takes its own
   foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
 - 🧩 **format templates** — reorder and repunctuate each section freely;
@@ -115,7 +116,8 @@ used_fg = cyan
 pct_fg  = bright_cyan
 
 [plan_long]
-format = {window} {pct} ↻{resets}   # "7d 41% ↻14:30"
+format = {window} {pct} ↻{resets}
+resets = clock                     # "7d 41% ↻Mon 14:30"
 ```
 
 | section | tokens |
@@ -124,7 +126,7 @@ format = {window} {pct} ↻{resets}   # "7d 41% ↻14:30"
 | `git` | `{branch}` |
 | `model` | `{name}` `{ver}` `{effort}` `{id}` |
 | `context` | `{used}` `{ceiling}` `{pct}` |
-| `plan_short` / `plan_long` | `{window}` `{pct}` `{resets}` |
+| `plan_short` / `plan_long` | `{window}` `{pct}` `{resets}` — plus `resets = countdown \| clock \| clock12` |
 
 Every section also has `{label}`, filled from its `label =` key, and takes
 `fg`/`bg` for its literal text plus `<token>_fg` / `<token>_bg` per token.

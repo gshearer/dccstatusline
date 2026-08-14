@@ -1,0 +1,95 @@
+# dcc¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸¸statusline â€” reference configuration
+#
+# This file documents the compiled-in de›››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››››label››››››››››››››faults: with no`con Â·".
+# {{ and }} give litâ”{resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} â†»ight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} â†»i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# â”€â”€ plan usage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =yan
+pct_fg  = bright_cya br~dow} {pct} â†»usage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = br~dow} {pct} â†»ight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}-[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} â†»i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# â”€â”€ plan usage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€âight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = brig     = bright_bbluelack
+pct_fg = br~dow} {pct} â†»i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# â”€â”€ plan usage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€âight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+ght_black
+pct_fg =
+ yellow
+# To _long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the loca€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {p}tc
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} â†»i= bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# â”€âe} {ver} Â·{effort}
+fg     = bright_magenta
+effort_fg = briw} renders the current tag (”€â”€â”€â”€â”€â”€â”€â”€
+# ns: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_bbluelack
+pct_fg = br~dow} {pct} â†»ight_yel{resets}low
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg =
+ yellow
+# To append the local reset time:
+# format = {window} {pct} â†»{resets}
