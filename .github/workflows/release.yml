@@ -38,9 +38,10 @@ jobs:
       - name: toolchain
         run: apk add --no-cache build-base meson git file github-cli
 
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
+      # Plain clone, not actions/checkout: JavaScript actions cannot run in
+      # Alpine containers on arm64 runners (musl node ships for x64 only).
+      - name: source
+        run: git clone --depth 1 --branch "$TAG" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" .
 
       - name: build
         run: |
