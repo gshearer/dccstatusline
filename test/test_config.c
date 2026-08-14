@@ -1,0 +1,150 @@
+// dccstatusline — MIT
+// test_config: INI dialect, overlay semantics, per-key tolerance
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "config.h"
+
+#include "check.h"
+
+static int tok(section_id_t, const char *);
+static void test_defaults(void);
+static void test_overlay(void);
+static void test_values(void);
+static void test_path(void);
+
+// Mirror of the internal token lookup, via the public schema table.
+static int
+tok(section_id_t id, const char *name)
+{
+  int i;
+
+  for(i = 0; dcc_sections[id].tokens[i]; i++)
+    if(strcmp(dcc_sections[id].tokens[i], name) == 0) return(i);
+
+  return(-1);
+}
+
+static void
+test_defaults(void)
+{
+  config_t cfg;
+
+  config_defaults(&cfg);
+  CHECK(cfg.norder == SEC_COUNT, "all sections on by default");
+  CHECK_MEM(cfg.separator.p, cfg.separator.n, " \xe2\x94\x82 ");
+  CHECK(cfg.sec[SEC_CONTEXT].format.n > 0, "context has a format");
+  CHECK(cfg.cwd_style == CWD_ABBREV, "cwd abbreviates by default");
+}
+
+static void
+test_overlay(void)
+{
+  char ini[] =
+    "# a comment\r\n"
+    "stray = ignored\n"                        // before any section header
+    "[statusline]\n"
+    "sections = git cwd bogus\n"
+    "separator = \" * \"\n"
+    "separator_fg = red\n"
+    "thousands = \"\"\n"
+    "\n"
+    "[git]\n"
+    "format = \"g:{branch}\"\n"
+    "branch_fg = 208\n"
+    "label = SCM\n"
+    "\n"
+    "[cwd]\r\n"
+    "style = basename\r\n"
+    "fg = #102030\n"
+    "\n"
+    "[nope]\n"
+    "key = value\n"
+    "\n"
+    "[model]\n"
+    "effort_fg = not_a_color\n"
+    "novel_key = ignored\n";
+  config_t cfg, defaults;
+  int bi = tok(SEC_GIT, "branch"), ei = tok(SEC_MODEL, "effort");
+
+  config_defaults(&defaults);
+  config_defaults(&cfg);
+  config_load(&cfg, ini, sizeof ini - 1);
+
+  CHECK(cfg.norder == 2 && cfg.order[0] == SEC_GIT && cfg.order[1] == SEC_CWD,
+        "order parsed, bogus name dropped (n=%u)", cfg.norder);
+  CHECK_MEM(cfg.separator.p, cfg.separator.n, " * ");
+  CHECK(cfg.sep_fg.kind == COLOR_NAMED16 && cfg.sep_fg.r == 1, "separator_fg red");
+  CHECK(cfg.thousands.n == 0, "thousands disabled via quoted empty");
+
+  CHECK_MEM(cfg.sec[SEC_GIT].format.p, cfg.sec[SEC_GIT].format.n, "g:{branch}");
+  CHECK(bi >= 0 && cfg.sec[SEC_GIT].tok_fg[bi].kind == COLOR_IDX256 &&
+        cfg.sec[SEC_GIT].tok_fg[bi].r == 208, "branch_fg 208");
+  CHECK_MEM(cfg.sec[SEC_GIT].label.p, cfg.sec[SEC_GIT].label.n, "SCM");
+
+  CHECK(cfg.cwd_style == CWD_BASENAME, "style basename");
+  CHECK(cfg.sec[SEC_CWD].fg.kind == COLOR_RGB &&
+        cfg.sec[SEC_CWD].fg.r == 0x10 && cfg.sec[SEC_CWD].fg.g == 0x20 &&
+        cfg.sec[SEC_CWD].fg.b == 0x30, "cwd truecolor fg");
+
+  CHECK(ei >= 0 &&
+        memcmp(&cfg.sec[SEC_MODEL].tok_fg[ei],
+               &defaults.sec[SEC_MODEL].tok_fg[ei],
+               sizeof(color_t)) == 0,
+        "bad color keeps that key's default");
+}
+
+static void
+test_values(void)
+{
+  char ini[] =
+    "[git]\n"
+    "format = {branch} # trailing comment\n"
+    "label = \"a\\\"b\\\\c\" # after the quote\n"
+    "\n"
+    "[cwd]\n"
+    "format = a=b\n"
+    "no_equals_line\n";
+  config_t cfg;
+
+  config_defaults(&cfg);
+  config_load(&cfg, ini, sizeof ini - 1);
+
+  CHECK_MEM(cfg.sec[SEC_GIT].format.p, cfg.sec[SEC_GIT].format.n, "{branch}");
+  CHECK_MEM(cfg.sec[SEC_GIT].label.p, cfg.sec[SEC_GIT].label.n, "a\"b\\c");
+  CHECK_MEM(cfg.sec[SEC_CWD].format.p, cfg.sec[SEC_CWD].format.n, "a=b");
+}
+
+static void
+test_path(void)
+{
+  char buf[256];
+
+  CHECK(setenv("DCCSTATUSLINE_CONFIG", "/tmp/x.conf", 1) == 0, "setenv");
+  CHECK(config_path(buf, sizeof buf), "explicit path resolves");
+  CHECK(strcmp(buf, "/tmp/x.conf") == 0, "explicit path wins");
+
+  CHECK(unsetenv("DCCSTATUSLINE_CONFIG") == 0, "unsetenv");
+  CHECK(setenv("XDG_CONFIG_HOME", "/xdg", 1) == 0, "setenv xdg");
+  CHECK(config_path(buf, sizeof buf), "xdg path resolves");
+  CHECK(strcmp(buf, "/xdg/dccstatusline/config") == 0, "xdg layout");
+
+  CHECK(unsetenv("XDG_CONFIG_HOME") == 0, "unsetenv xdg");
+  CHECK(setenv("HOME", "/home/u", 1) == 0, "setenv home");
+  CHECK(config_path(buf, sizeof buf), "home path resolves");
+  CHECK(strcmp(buf, "/home/u/.config/dccstatusline/config") == 0, "home layout");
+
+  CHECK(!config_path(buf, 8), "tiny cap refuses");
+}
+
+int
+main(void)
+{
+  test_defaults();
+  test_overlay();
+  test_values();
+  test_path();
+
+  return(check_failures ? 1 : 0);
+}

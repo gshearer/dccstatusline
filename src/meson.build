@@ -14,7 +14,10 @@ dcc_inc = include_directories('.')
 
 dcccore = static_library('dcccore',
   'color.c',
+  'config.c',
   'fmt.c',
+  'json.c',
+  'payload.c',
   'util.c')
 
 dccstatusline = executable('dccstatusline',
