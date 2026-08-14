@@ -41,6 +41,10 @@ void sbuf_append_tail(sbuf_t *, const char *, size_t);
 // the length written, or 0 with an empty string when cap cannot hold it.
 size_t u64_grouped(char *, size_t, uint64_t, sv_t);
 
+// Reads a whole file into dst. Returns bytes read; 0 for missing, unreadable,
+// or empty files alike — for a config, absent and empty mean the same thing.
+size_t file_slurp(const char *, char *, size_t);
+
 // Returns a view of path with an exact $HOME prefix rewritten to `~` (built in
 // dst), or the original path view untouched when no abbreviation applies.
 sv_t path_abbrev(char *, size_t, sv_t, sv_t);

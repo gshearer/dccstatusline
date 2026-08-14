@@ -1,0 +1,90 @@
+# dccstatusline — reference configuration
+#
+# This file documents the compiled-in defaults: with no config file present,
+# exactly this is what you get. To customize, copy it into place and edit:
+#
+#     mkdir -p ~/.config/dccstatusline
+#     cp examples/config ~/.config/dccstatusline/config
+#
+# Every key is optional; unknown keys and sections are ignored, and a value
+# that fails to parse keeps its default (with a note on stderr, visible via
+# `claude --debug`). The DCCSTATUSLINE_CONFIG environment variable overrides
+# the config path entirely.
+#
+# Colors, wherever a *_fg or *_bg key appears:
+#     names      black red green yellow blue magenta cyan white,
+#                each also with a bright_ prefix (e.g. bright_cyan)
+#     256-color  a number 0-255
+#     truecolor  #rrggbb
+#     default    clears a compiled-in color
+#
+# Values with significant whitespace belong in quotes: separator = " | ".
+# Inside quotes, \" is a literal quote and \\ a literal backslash. After an
+# unquoted value a comment starts at a # preceded by whitespace — a leading
+# # is data, which is why truecolor values need no quoting.
+#
+# Formats are templates. {tokens} are replaced by live values and styled by
+# their *_fg/*_bg keys; literal text is styled by the section's fg/bg. A
+# token with nothing to show also swallows the literal run before it, so
+# "{name} {ver} ·{effort}" degrades to "Fable 5" — never "Fable 5 ·".
+# {{ and }} give literal braces. Every section also has a {label} token,
+# filled from its `label` key.
+
+[statusline]
+# Any subset, any order. A section with nothing to show vanishes,
+# separator included.
+sections  = cwd git model context plan_short plan_long
+separator = " │ "
+separator_fg = bright_black
+# Digit grouping for token counts. "" disables.
+thousands = ,
+
+# ── cwd ────────────────────────────────────────────────────────────────
+# Tokens: {label} {path}
+[cwd]
+format = {path}
+style  = abbrev          # abbrev (~ for $HOME) | full | basename
+fg     = bright_blue
+
+# ── git ────────────────────────────────────────────────────────────────
+# Tokens: {label} {branch} — branch name, or an 8-hex short SHA when
+# detached. The section vanishes outside a repository.
+[git]
+format = {branch}
+fg     = bright_green
+
+# ── model ──────────────────────────────────────────────────────────────
+# Tokens: {label} {name} {ver} {effort} {id}
+# {ver} is derived from the model id (claude-fable-5 → "5").
+[model]
+format = {name} {ver} ·{effort}
+fg     = bright_magenta
+effort_fg = bright_black
+
+# ── context ────────────────────────────────────────────────────────────
+# Tokens: {label} {used} {ceiling} {pct}
+# {pct} uses Claude Code's precomputed figure when present, else derives
+# it from used/ceiling. Percent signs are part of the token.
+[context]
+format  = {label} {used}/{ceiling} {pct}
+label   = ctx
+fg      = bright_black
+used_fg = cyan
+pct_fg  = bright_cyan
+
+# ── plan usage ─────────────────────────────────────────────────────────
+# Claude Code reports a short and a long rate-limit window (5-hour and
+# 7-day today). {window} renders the current tag ("5h"/"7d"), so these
+# sections survive any future window change without config edits.
+# Tokens: {label} {window} {pct} {resets}
+[plan_short]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = bright_yellow
+
+[plan_long]
+format = {window} {pct}
+fg     = bright_black
+pct_fg = yellow
+# To append the local reset time:
+# format = {window} {pct} ↻{resets}

@@ -2,6 +2,7 @@
 // main: read the Claude Code payload from stdin, emit the status line, never fail
 
 #include <errno.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,6 +10,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "config.h"
+#include "gitinfo.h"
+#include "payload.h"
+#include "sections.h"
+#include "util.h"
 #include "version.h"
 
 // Claude Code blanks the status line on a non-zero exit or empty stdout, so
@@ -16,8 +22,11 @@
 
 static size_t stdin_drain(void);
 static bool write_all(const char *, size_t);
+static bool want_git(const config_t *);
 
 static char stdin_buf[64 * 1024];
+static char config_buf[32 * 1024];
+static char line_mem[8 * 1024];
 
 // Reads until EOF, the buffer cap, or an unrecoverable error. Whatever arrived
 // is whatever we parse; short data is the parser's problem, not a fatal one.
@@ -67,10 +76,26 @@ write_all(const char *buf, size_t len)
   return(true);
 }
 
+static bool
+want_git(const config_t *cfg)
+{
+  size_t i;
+
+  for(i = 0; i < cfg->norder; i++)
+    if(cfg->order[i] == SEC_GIT) return(true);
+
+  return(false);
+}
+
 int
 main(int argc, char **argv)
 {
   static const char fallback[] = "\x1b[0;2m" DCC_BUILD_STRING "\x1b[0m\n";
+  config_t cfg;
+  payload_t pay;
+  gitinfo_t git = { false, "", 0 };
+  sbuf_t line;
+  size_t n;
 
   if(argc > 1 && strcmp(argv[1], "--version") == 0)
   {
@@ -80,9 +105,38 @@ main(int argc, char **argv)
 
   signal(SIGPIPE, SIG_IGN);   // a cancelled in-flight refresh must not kill us
 
-  stdin_drain();              // payload parsing lands with the parser chunks
+  n = stdin_drain();
+  config_defaults(&cfg);
 
-  write_all(fallback, sizeof fallback - 1);
+  {
+    char path[PATH_MAX];
+
+    if(config_path(path, sizeof path))
+    {
+      size_t got = file_slurp(path, config_buf, sizeof config_buf);
+
+      if(got) config_load(&cfg, config_buf, got);
+    }
+  }
+
+  sbuf_init(&line, line_mem, sizeof line_mem, 5);   // tail: reset + newline
+
+  if(payload_parse(stdin_buf, n, &pay))
+  {
+    if(pay.has_cwd && want_git(&cfg)) gitinfo_read(pay.cwd, &git);
+
+    statusline_render(&line, &pay, &cfg, &git);
+  }
+
+  if(!line.len)
+  {
+    write_all(fallback, sizeof fallback - 1);
+
+    return(0);
+  }
+
+  sbuf_append_tail(&line, "\x1b[0m\n", 5);
+  write_all(line.p, line.len);
 
   return(0);
 }

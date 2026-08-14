@@ -16,8 +16,10 @@ dcccore = static_library('dcccore',
   'color.c',
   'config.c',
   'fmt.c',
+  'gitinfo.c',
   'json.c',
   'payload.c',
+  'sections.c',
   'util.c')
 
 dccstatusline = executable('dccstatusline',

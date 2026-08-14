@@ -1,10 +1,34 @@
 // dccstatusline — MIT
 // util: string views, the saturating output buffer, small formatting helpers
 
+#include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 
 #define UTIL_INTERNAL
 #include "util.h"
+
+size_t
+file_slurp(const char *path, char *dst, size_t cap)
+{
+  int fd = open(path, O_RDONLY | O_CLOEXEC);
+  size_t used = 0;
+
+  if(fd < 0) return(0);
+
+  while(used < cap)
+  {
+    ssize_t got = read(fd, dst + used, cap - used);
+
+    if(got <= 0) break;
+
+    used += (size_t)got;
+  }
+
+  close(fd);
+
+  return(used);
+}
 
 sv_t
 sv_from_cstr(const char *s)
