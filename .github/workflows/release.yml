@@ -46,7 +46,7 @@ jobs:
       - name: build
         run: |
           meson setup build -Doptimization=2 -Ddebug=false -Db_lto=true \
-                            -Dc_link_args=-static -Dstrip=true
+                            -Dc_link_args=-static
           meson test -C build --print-errorlogs
           ninja -C build
 
@@ -59,6 +59,7 @@ jobs:
         run: |
           bin="dccstatusline-${{ matrix.arch }}-linux-musl"
           cp build/src/dccstatusline "$bin"
+          strip "$bin"
           sha256sum "$bin" > "$bin.sha256"
 
       - name: upload
