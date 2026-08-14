@@ -58,6 +58,17 @@ guarantee enforced by construction (single exit path) and hammered by fuzzing.
 
 ## Quick start
 
+No toolchain? Grab a static musl binary (x86_64 or aarch64, no dependencies at
+all) — the `latest` URL is stable across releases:
+
+```sh
+curl -sL -o ~/.local/bin/dccstatusline \
+  https://github.com/gshearer/dccstatusline/releases/latest/download/dccstatusline-$(uname -m)-linux-musl
+chmod +x ~/.local/bin/dccstatusline
+```
+
+Or build from source:
+
 ```sh
 git clone https://github.com/gshearer/dccstatusline.git
 cd dccstatusline
