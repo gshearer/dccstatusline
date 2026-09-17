@@ -36,13 +36,19 @@ ninja -C build-dev
 
 Run tests with `meson test -C <dir>`.
 
-## Static release binaries
+## Release binaries
 
 `.github/workflows/release.yml` builds static x86_64 and aarch64 binaries in
 Alpine containers on every version-tag push and attaches them (with sha256
 sums) to the GitHub release; asset names are unversioned so
 `/releases/latest/download/dccstatusline-<arch>-linux-musl` is a stable URL.
 Backfill an existing tag with `gh workflow run release.yml -f tag=<tag>`.
+
+The same workflow also builds a native macOS Apple Silicon binary on a
+`macos-15` runner and attaches it as `dccstatusline-arm64-macos` (macOS has no
+static libc, so it is dynamically linked against `libSystem`). It is unsigned;
+after downloading, clear the Gatekeeper quarantine flag once with
+`xattr -d com.apple.quarantine <file>`. Intel Macs build from source.
 
 One honest caveat: `_FORTIFY_SOURCE` is a glibc-headers mechanism, so on musl
 the flag compiles as a no-op — static binaries keep `-fstack-protector-strong`

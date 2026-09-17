@@ -1,11 +1,14 @@
-# Builds musl-static release binaries and attaches them to the GitHub release.
+# Builds release binaries and attaches them to the GitHub release: static musl
+# Linux (x86_64, aarch64) and a native macOS Apple Silicon binary.
 #
 # Triggers on version-tag push, or manually (workflow_dispatch) with an existing
 # tag to backfill — the workflow file runs from the default branch either way;
-# the checkout below pulls the tagged source.
+# each job checks out the tagged source.
 #
-# Asset names are unversioned (dccstatusline-<arch>-linux-musl) so
-# /releases/latest/download/ URLs stay stable across releases.
+# Asset names are unversioned (dccstatusline-<arch>-linux-musl,
+# dccstatusline-arm64-macos) so /releases/latest/download/ URLs stay stable
+# across releases. The macOS binary is unsigned; see README for the one-time
+# Gatekeeper quarantine step.
 
 name: release
 
@@ -71,3 +74,48 @@ jobs:
               --verify-tag --title "$TAG" --generate-notes || true
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
             dccstatusline-*-linux-musl*
+
+  # macOS cannot run inside the Alpine container the Linux job uses, so it is its
+  # own job on a macOS runner. It uploads to the same release via the same
+  # idempotent gh block. macos-15 is Apple Silicon (arm64); it is pinned rather
+  # than macos-latest, which is migrating to macOS 26. macOS has no static libc,
+  # so the binary is dynamically linked against libSystem (no -static, and no
+  # 'file | grep static' check).
+  build-macos:
+    runs-on: macos-15
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: toolchain
+        run: brew install meson ninja
+
+      - name: build
+        run: |
+          meson setup build -Doptimization=2 -Ddebug=false -Db_lto=true
+          meson test -C build --print-errorlogs
+          ninja -C build
+
+      - name: verify
+        run: ./build/src/dccstatusline --version
+
+      - name: package
+        run: |
+          bin="dccstatusline-arm64-macos"
+          cp build/src/dccstatusline "$bin"
+          strip "$bin"
+          shasum -a 256 "$bin" > "$bin.sha256"
+
+      - name: upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --verify-tag --title "$TAG" --generate-notes || true
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            dccstatusline-arm64-macos*
