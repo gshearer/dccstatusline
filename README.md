@@ -68,14 +68,21 @@ curl -sL -o ~/.local/bin/dccstatusline \
 chmod +x ~/.local/bin/dccstatusline
 ```
 
-On macOS (Apple Silicon), grab the native binary. It is unsigned, so clear the
-quarantine flag once after downloading or Gatekeeper will refuse to run it:
+On macOS (Apple Silicon), grab the native binary — dynamically linked against
+`libSystem`, since macOS has no static libc:
 
 ```sh
 curl -sL -o ~/.local/bin/dccstatusline \
   https://github.com/gshearer/dccstatusline/releases/latest/download/dccstatusline-arm64-macos
 chmod +x ~/.local/bin/dccstatusline
-xattr -d com.apple.quarantine ~/.local/bin/dccstatusline 2>/dev/null || true
+```
+
+The binary is unsigned. `curl` does not quarantine what it downloads, so the
+above just works; a *browser* download does, and Gatekeeper will then refuse to
+run it until you clear the flag once:
+
+```sh
+xattr -d com.apple.quarantine ~/.local/bin/dccstatusline
 ```
 
 Or build from source:

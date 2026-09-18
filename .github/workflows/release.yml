@@ -37,6 +37,7 @@ jobs:
     container: alpine:3.22
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
+      BIN: dccstatusline-${{ matrix.arch }}-linux-musl
     steps:
       - name: toolchain
         run: apk add --no-cache build-base meson git file github-cli
@@ -53,17 +54,18 @@ jobs:
           meson test -C build --print-errorlogs
           ninja -C build
 
-      - name: verify static
-        run: |
-          file build/src/dccstatusline | grep -q 'static'
-          ./build/src/dccstatusline --version
-
       - name: package
         run: |
-          bin="dccstatusline-${{ matrix.arch }}-linux-musl"
-          cp build/src/dccstatusline "$bin"
-          strip "$bin"
-          sha256sum "$bin" > "$bin.sha256"
+          cp build/src/dccstatusline "$BIN"
+          strip "$BIN"
+          sha256sum "$BIN" > "$BIN.sha256"
+
+      # Verify the packaged asset, never the build-tree binary: strip is the last
+      # thing to touch what ships, so what ships is what has to run.
+      - name: verify
+        run: |
+          file "$BIN" | grep -q 'static'
+          ./"$BIN" --version
 
       - name: upload
         env:
@@ -73,7 +75,7 @@ jobs:
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --verify-tag --title "$TAG" --generate-notes || true
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
-            dccstatusline-*-linux-musl*
+            "$BIN" "$BIN.sha256"
 
   # macOS cannot run inside the Alpine container the Linux job uses, so it is its
   # own job on a macOS runner. It uploads to the same release via the same
@@ -85,6 +87,7 @@ jobs:
     runs-on: macos-15
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
+      BIN: dccstatusline-arm64-macos
     steps:
       - name: source
         uses: actions/checkout@v5
@@ -100,15 +103,19 @@ jobs:
           meson test -C build --print-errorlogs
           ninja -C build
 
-      - name: verify
-        run: ./build/src/dccstatusline --version
-
       - name: package
         run: |
-          bin="dccstatusline-arm64-macos"
-          cp build/src/dccstatusline "$bin"
-          strip "$bin"
-          shasum -a 256 "$bin" > "$bin.sha256"
+          cp build/src/dccstatusline "$BIN"
+          strip "$BIN"
+          shasum -a 256 "$BIN" > "$BIN.sha256"
+
+      # Same rule as Linux, with sharper teeth: an arm64 Mach-O with a broken
+      # signature is a SIGKILL, and strip rewrites the binary after the linker
+      # applied its ad-hoc signature. Running the stripped asset proves the seal.
+      - name: verify
+        run: |
+          file "$BIN" | grep -q 'arm64'
+          ./"$BIN" --version
 
       - name: upload
         env:
@@ -118,4 +125,4 @@ jobs:
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --verify-tag --title "$TAG" --generate-notes || true
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
-            dccstatusline-arm64-macos*
+            "$BIN" "$BIN.sha256"

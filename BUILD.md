@@ -46,9 +46,10 @@ Backfill an existing tag with `gh workflow run release.yml -f tag=<tag>`.
 
 The same workflow also builds a native macOS Apple Silicon binary on a
 `macos-15` runner and attaches it as `dccstatusline-arm64-macos` (macOS has no
-static libc, so it is dynamically linked against `libSystem`). It is unsigned;
-after downloading, clear the Gatekeeper quarantine flag once with
-`xattr -d com.apple.quarantine <file>`. Intel Macs build from source.
+static libc, so it is dynamically linked against `libSystem`). It is unsigned,
+which only matters for browser downloads: those carry `com.apple.quarantine` and
+need `xattr -d com.apple.quarantine <file>` once before Gatekeeper will run them.
+`curl` sets no such flag. Intel Macs build from source.
 
 One honest caveat: `_FORTIFY_SOURCE` is a glibc-headers mechanism, so on musl
 the flag compiles as a no-op — static binaries keep `-fstack-protector-strong`
