@@ -1,13 +1,20 @@
 # Building dccstatusline
 
-Linux is the primary platform; the code is plain POSIX C and is expected to port to other
-POSIX systems, but only Linux is exercised today.
+Linux is the primary platform. The code is plain POSIX C and also builds and passes its
+test suite on macOS (Apple clang 17, arm64); other POSIX systems are expected to work but
+are not exercised.
 
 ## Requirements
 
 - meson ≥ 1.4 and ninja
-- gcc ≥ 14 or clang ≥ 18 (C23), glibc ≥ 2.38 or musl (`strlcpy`)
+- gcc ≥ 14 or clang ≥ 18 (C23; Apple clang ≥ 16 works), glibc ≥ 2.38, musl, or a BSD/macOS
+  libc (all provide `strlcpy`)
 - clang only: the optional fuzz harnesses (`-Dfuzz=true`)
+
+The hardening flags are feature-detected, so a toolchain that lacks
+`-fstack-clash-protection` (notably Apple clang) still builds — it keeps
+`-fstack-protector-strong` and drops only the unsupported flag. Static linking
+(`-Dc_link_args=-static`) is Linux/musl only; a macOS build is dynamically linked.
 
 ## Quick start
 
@@ -29,13 +36,19 @@ ninja -C build-dev
 
 Run tests with `meson test -C <dir>`.
 
-## Static release binaries
+## Release binaries
 
 `.github/workflows/release.yml` builds static x86_64 and aarch64 binaries in
 Alpine containers on every version-tag push and attaches them (with sha256
 sums) to the GitHub release; asset names are unversioned so
 `/releases/latest/download/dccstatusline-<arch>-linux-musl` is a stable URL.
 Backfill an existing tag with `gh workflow run release.yml -f tag=<tag>`.
+
+The same workflow also builds a native macOS Apple Silicon binary on a
+`macos-15` runner and attaches it as `dccstatusline-arm64-macos` (macOS has no
+static libc, so it is dynamically linked against `libSystem`). It is unsigned;
+after downloading, clear the Gatekeeper quarantine flag once with
+`xattr -d com.apple.quarantine <file>`. Intel Macs build from source.
 
 One honest caveat: `_FORTIFY_SOURCE` is a glibc-headers mechanism, so on musl
 the flag compiles as a no-op — static binaries keep `-fstack-protector-strong`

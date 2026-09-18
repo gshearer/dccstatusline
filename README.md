@@ -68,6 +68,16 @@ curl -sL -o ~/.local/bin/dccstatusline \
 chmod +x ~/.local/bin/dccstatusline
 ```
 
+On macOS (Apple Silicon), grab the native binary. It is unsigned, so clear the
+quarantine flag once after downloading or Gatekeeper will refuse to run it:
+
+```sh
+curl -sL -o ~/.local/bin/dccstatusline \
+  https://github.com/gshearer/dccstatusline/releases/latest/download/dccstatusline-arm64-macos
+chmod +x ~/.local/bin/dccstatusline
+xattr -d com.apple.quarantine ~/.local/bin/dccstatusline 2>/dev/null || true
+```
+
 Or build from source:
 
 ```sh
