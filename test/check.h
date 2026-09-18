@@ -6,14 +6,20 @@
 
 static int check_failures;
 
-#define CHECK(cond, fmt, ...)                                              \
+// The format string rides inside __VA_ARGS__ rather than sitting in a named
+// parameter, so a CHECK with nothing to interpolate still passes one variadic
+// argument. The obvious spelling — CHECK(cond, fmt, ...) — leaves that tail
+// empty, which C23 permits but clang still rejects under -Wpedantic; two
+// fprintf calls in a test harness cost nothing and keep the macro ISO-clean.
+#define CHECK(cond, ...)                                                   \
   do                                                                       \
   {                                                                        \
     if(!(cond))                                                            \
     {                                                                      \
       check_failures++;                                                    \
-      fprintf(stderr, "FAIL %s:%d: " fmt "\n",                             \
-              __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__);               \
+      fprintf(stderr, "FAIL %s:%d: ", __FILE__, __LINE__);                 \
+      fprintf(stderr, __VA_ARGS__);                                        \
+      fputc('\n', stderr);                                                 \
     }                                                                      \
   }                                                                        \
   while(0)
