@@ -124,7 +124,7 @@ syscall-dominated; -O3 buys nothing).
 
 Build number: a native C helper (`tools/buildnum.c`) runs as a `build_always_stale`
 custom target, incrementing `build_number.txt` (source root, gitignored — survives
-build-dir wipes) and generating `version.h` with `DCC_BUILD_STRING "dccstatusline v0.0.1
+build-dir wipes) and generating `version.h` with `DCC_BUILD_STRING "dccstatusline v<version>
 (build #N)"`. N counts ninja invocations that build; only `main.c` includes the header,
 so each bump costs one tiny recompile and a relink.
 

@@ -1,5 +1,5 @@
 project('dccstatusline', 'c',
-  version: '0.0.1',
+  version: '0.0.2',
   license: 'MIT',
   meson_version: '>=1.4.0',
   default_options: [
