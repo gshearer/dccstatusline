@@ -3,7 +3,8 @@
 #
 # Triggers on version-tag push, or manually (workflow_dispatch) with an existing
 # tag to backfill — the workflow file runs from the default branch either way;
-# each job checks out the tagged source.
+# each build job checks out the tagged source. A leading `release` job creates
+# the release so the build jobs never race to create it themselves.
 #
 # Asset names are unversioned (dccstatusline-<arch>-linux-musl,
 # dccstatusline-arm64-macos) so /releases/latest/download/ URLs stay stable
@@ -25,7 +26,25 @@ permissions:
   contents: write
 
 jobs:
+  # Creating the release is one job's business. Three build jobs racing to run
+  # "view || create" meant the losers' errors had to be swallowed with || true,
+  # which also swallowed the real ones; with the release guaranteed to exist
+  # first, every job below can simply upload and fail honestly if it cannot.
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: ensure release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && exit 0
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --title "$TAG" --generate-notes
+
   build:
+    needs: release
     strategy:
       matrix:
         include:
@@ -71,9 +90,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
-              --verify-tag --title "$TAG" --generate-notes || true
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
             "$BIN" "$BIN.sha256"
 
@@ -84,6 +100,7 @@ jobs:
   # so the binary is dynamically linked against libSystem (no -static, and no
   # 'file | grep static' check).
   build-macos:
+    needs: release
     runs-on: macos-15
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -121,8 +138,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
-              --verify-tag --title "$TAG" --generate-notes || true
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
             "$BIN" "$BIN.sha256"

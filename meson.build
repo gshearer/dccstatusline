@@ -17,17 +17,33 @@ add_project_arguments(
   '-Wformat=2',
   language: 'c')
 
-# Hardening flags are feature-detected: not every toolchain accepts them.
-# Apple clang, for one, recognizes -fstack-clash-protection but marks it unused
-# during compilation, which werror=true turns fatal; get_supported_arguments
-# (which tests with -Werror=unused-command-line-argument under clang) keeps only
-# what the active compiler actually honors, so the Linux build stays fully
-# hardened while macOS drops just the flag it can't use.
-add_project_arguments(
-  cc.get_supported_arguments(
-    '-fstack-protector-strong',
-    '-fstack-clash-protection'),
-  language: 'c')
+# Hardening flags are feature-detected, because not every toolchain accepts
+# them: Apple clang recognizes -fstack-clash-protection but marks it unused,
+# which werror=true turns fatal.
+#
+# Detection must never mean silent degradation, though. On Linux — the platform
+# the release binaries target, and the one whose hardening BUILD.md makes
+# promises about — a flag the compiler will not honor is a configure-time error,
+# not a quiet downgrade discovered later by reading a build log nobody kept.
+hardening = ['-fstack-protector-strong', '-fstack-clash-protection']
+honored = cc.get_supported_arguments(hardening)
+
+if host_machine.system() == 'linux'
+  missing = []
+
+  foreach flag : hardening
+    if not honored.contains(flag)
+      missing += flag
+    endif
+  endforeach
+
+  if missing.length() > 0
+    error('@0@ will not honor required hardening: @1@'.format(
+      cc.get_id(), ', '.join(missing)))
+  endif
+endif
+
+add_project_arguments(honored, language: 'c')
 
 # _FORTIFY_SOURCE needs optimization and fights sanitizer interceptors, so it is
 # applied per-configuration rather than globally. -U guards against distro

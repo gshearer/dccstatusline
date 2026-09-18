@@ -1,0 +1,90 @@
+# Builds and tests every push and pull request, on the toolchains that ship.
+#
+# release.yml proves the release *binaries*; this proves the *code*, early enough
+# that a tag push is never the first time a compiler sees a change — macOS most
+# of all, since its only other appearance is mid-release.
+#
+# Ubuntu 24.04 carries meson 1.3, below the project floor of 1.4, so meson comes
+# from pipx rather than apt; ninja and the compilers come from apt.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Both supported compilers against both configurations that matter: the dev
+  # default, and the release recipe whose -O2 + LTO + _FORTIFY_SOURCE=3 can fail
+  # where a debug build sails through.
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc-14, clang-18]
+        config:
+          - name: dev
+            args: ''
+          - name: release
+            args: '-Doptimization=2 -Ddebug=false -Db_lto=true'
+    runs-on: ubuntu-24.04
+    name: linux · ${{ matrix.cc }} · ${{ matrix.config.name }}
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build ${{ matrix.cc }}
+          pipx install meson
+
+      - name: build & test
+        run: |
+          meson setup build ${{ matrix.config.args }}
+          meson test -C build --print-errorlogs
+
+  # BUILD.md: "the suite must be green here before anything ships." Say it in a
+  # file that can enforce it.
+  sanitizers:
+    runs-on: ubuntu-24.04
+    name: linux · asan+ubsan
+    env:
+      CC: clang-18
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang-18 libclang-rt-18-dev
+          pipx install meson
+
+      - name: build & test
+        env:
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          meson setup build-asan -Dbuildtype=debug -Db_sanitize=address,undefined
+          meson test -C build-asan --print-errorlogs
+
+  # The platform release.yml ships a binary for. Apple clang is the reason the
+  # hardening flags are feature-detected at all, so it needs to be seen here.
+  macos:
+    runs-on: macos-15
+    name: macos · apple clang
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: toolchain
+        run: brew install meson ninja
+
+      - name: build & test
+        run: |
+          meson setup build -Doptimization=2 -Ddebug=false -Db_lto=true
+          meson test -C build --print-errorlogs
+          ./build/src/dccstatusline --version

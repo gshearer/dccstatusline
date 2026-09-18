@@ -13,8 +13,11 @@ are not exercised.
 
 The hardening flags are feature-detected, so a toolchain that lacks
 `-fstack-clash-protection` (notably Apple clang) still builds — it keeps
-`-fstack-protector-strong` and drops only the unsupported flag. Static linking
-(`-Dc_link_args=-static`) is Linux/musl only; a macOS build is dynamically linked.
+`-fstack-protector-strong` and drops only the unsupported flag. **On Linux this
+is a hard floor, not a preference**: both flags are required, and `meson setup`
+fails naming the missing one rather than quietly shipping a softer binary than
+this file claims. Static linking (`-Dc_link_args=-static`) is Linux/musl only; a
+macOS build is dynamically linked.
 
 ## Quick start
 
@@ -35,6 +38,14 @@ ninja -C build-dev
 | `build-musl` | `CC=musl-gcc meson setup build-musl -Doptimization=2 -Ddebug=false -Db_lto=true -Dc_link_args=-static` | fully static binary (needs the `musl` package) |
 
 Run tests with `meson test -C <dir>`.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
+both supported compilers (gcc 14, clang 18) against both the dev and release
+configurations, the ASan/UBSan suite, and a macOS build on Apple clang. macOS is
+there deliberately — `release.yml` is the only other place it appears, and
+finding a break there means finding it with a tag already pushed.
 
 ## Release binaries
 
