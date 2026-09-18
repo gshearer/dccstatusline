@@ -9,10 +9,20 @@
 #include "check.h"
 
 static int tok(section_id_t, const char *);
+static bool color_eq(color_t, color_t);
 static void test_defaults(void);
 static void test_overlay(void);
 static void test_values(void);
 static void test_path(void);
+
+// color_t is four bytes of enum followed by three of rgb, so it carries a byte
+// of tail padding. Compare the fields the type declares, never its bytes: what
+// lands in padding is the compiler's business, and gcc and clang disagree.
+static bool
+color_eq(color_t a, color_t b)
+{
+  return(a.kind == b.kind && a.r == b.r && a.g == b.g && a.b == b.b);
+}
 
 // Mirror of the internal token lookup, via the public schema table.
 static int
@@ -88,10 +98,8 @@ test_overlay(void)
         cfg.sec[SEC_CWD].fg.r == 0x10 && cfg.sec[SEC_CWD].fg.g == 0x20 &&
         cfg.sec[SEC_CWD].fg.b == 0x30, "cwd truecolor fg");
 
-  CHECK(ei >= 0 &&
-        memcmp(&cfg.sec[SEC_MODEL].tok_fg[ei],
-               &defaults.sec[SEC_MODEL].tok_fg[ei],
-               sizeof(color_t)) == 0,
+  CHECK(ei >= 0 && color_eq(cfg.sec[SEC_MODEL].tok_fg[ei],
+                            defaults.sec[SEC_MODEL].tok_fg[ei]),
         "bad color keeps that key's default");
 }
 
