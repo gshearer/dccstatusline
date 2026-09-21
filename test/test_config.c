@@ -12,6 +12,7 @@ static int tok(section_id_t, const char *);
 static void test_defaults(void);
 static void test_overlay(void);
 static void test_values(void);
+static void test_cwd_shortening(void);
 static void test_path(void);
 
 // Mirror of the internal token lookup, via the public schema table.
@@ -36,6 +37,7 @@ test_defaults(void)
   CHECK_MEM(cfg.separator.p, cfg.separator.n, " \xe2\x94\x82 ");
   CHECK(cfg.sec[SEC_CONTEXT].format.n > 0, "context has a format");
   CHECK(cfg.cwd_style == CWD_ABBREV, "cwd abbreviates by default");
+  CHECK(cfg.cwd_depth == 0 && cfg.cwd_max_len == 0, "cwd is unshortened by default");
 }
 
 static void
@@ -117,6 +119,45 @@ test_values(void)
 }
 
 static void
+test_cwd_shortening(void)
+{
+  char ini[] =
+    "[cwd]\n"
+    "style   = shrink\n"
+    "depth   = 3\n"
+    "max_len = 40\n";
+  char bad[] =
+    "[cwd]\n"
+    "style   = sideways\n"
+    "depth   = 2x\n"
+    "max_len = 70000\n";       // past uint16: refused whole
+  config_t cfg;
+
+  config_defaults(&cfg);
+  config_load(&cfg, ini, sizeof ini - 1);
+  CHECK(cfg.cwd_style == CWD_SHRINK, "style shrink");
+  CHECK(cfg.cwd_depth == 3, "depth 3 (got %u)", cfg.cwd_depth);
+  CHECK(cfg.cwd_max_len == 40, "max_len 40 (got %u)", cfg.cwd_max_len);
+
+  {
+    char repo[] = "[cwd]\nstyle = repo\n";
+
+    config_defaults(&cfg);
+    config_load(&cfg, repo, sizeof repo - 1);
+    CHECK(cfg.cwd_style == CWD_REPO, "style repo");
+  }
+
+  config_defaults(&cfg);
+  cfg.cwd_depth = 2;
+  cfg.cwd_max_len = 30;
+  config_load(&cfg, bad, sizeof bad - 1);
+  CHECK(cfg.cwd_style == CWD_ABBREV, "bad style keeps the default");
+  CHECK(cfg.cwd_depth == 2, "bad depth keeps its value (got %u)", cfg.cwd_depth);
+  CHECK(cfg.cwd_max_len == 30, "overflowing max_len keeps its value (got %u)",
+        cfg.cwd_max_len);
+}
+
+static void
 test_path(void)
 {
   char buf[256];
@@ -144,6 +185,7 @@ main(void)
   test_defaults();
   test_overlay();
   test_values();
+  test_cwd_shortening();
   test_path();
 
   return(check_failures ? 1 : 0);

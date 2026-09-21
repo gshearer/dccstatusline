@@ -19,7 +19,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
   static char line[8 * 1024];
   config_t cfg;
   payload_t pay;
-  gitinfo_t git = { true, "main", 4 };
+  gitinfo_t git = { true, "main", 4, 0 };
   sbuf_t sb;
 
   if(size > sizeof buf) size = sizeof buf;

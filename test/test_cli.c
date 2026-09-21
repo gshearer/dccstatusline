@@ -21,6 +21,7 @@ static bool run_bin(const char *, size_t, char *, size_t, size_t *);
 static void expect_line(const char *, const char *, const char *);
 static void expect_fallback(const char *, size_t, const char *);
 static void test_styled(void);
+static void test_cwd_shortened(void);
 static void test_failure_modes(void);
 
 static bool
@@ -156,6 +157,30 @@ test_styled(void)
               "styled end-to-end");
 }
 
+// The whole cwd pipeline through the real binary: shrink, then a column cap.
+static void
+test_cwd_shortened(void)
+{
+  static const char ini[] =
+    "[statusline]\n"
+    "sections = cwd\n"
+    "[cwd]\n"
+    "style   = shrink\n"
+    "depth   = 2\n"
+    "max_len = 20\n"
+    "fg = default\n"
+    "path_fg = default\n";
+  static const char payload[] =
+    "{\"cwd\":\"/mnt/volumes/source/acme/platform/terraform/projects\"}";
+  FILE *f = fopen("cli_cwd_config.ini", "w");
+
+  CHECK(f && fputs(ini, f) >= 0 && fclose(f) == 0, "cwd fixture config written");
+  CHECK(setenv("DCCSTATUSLINE_CONFIG", "cli_cwd_config.ini", 1) == 0, "env");
+
+  expect_line(payload, "\x1b[0m\xe2\x80\xa6/terraform/projects\x1b[0m\n",
+              "cwd shortened end-to-end");
+}
+
 static void
 test_failure_modes(void)
 {
@@ -183,6 +208,7 @@ main(int argc, char **argv)
   signal(SIGPIPE, SIG_IGN);   // the oversized-stdin case writes into a wall
 
   test_styled();
+  test_cwd_shortened();
   test_failure_modes();
 
   return(check_failures ? 1 : 0);
