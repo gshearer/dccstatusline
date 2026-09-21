@@ -214,3 +214,11 @@ For the reader who enjoys knowing why it's fast:
 
 **Designed by** George Shearer (george at shearer dot tech) ·
 **Written by** [Claude](https://claude.com/claude-code)
+
+## Contributors
+
+With thanks to everyone whose pull requests have been merged:
+
+- **dk** ([@kenzik](https://github.com/kenzik)) — macOS release binary
+  ([#1](https://github.com/gshearer/dccstatusline/pull/1)), cwd shortening
+  ([#3](https://github.com/gshearer/dccstatusline/pull/3))
