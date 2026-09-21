@@ -72,6 +72,34 @@ jobs:
           meson setup build-asan -Dbuildtype=debug -Db_sanitize=address,undefined
           meson test -C build-asan --print-errorlogs
 
+  # The libFuzzer harnesses are code too, and nothing else compiles them: a struct
+  # that gains a field breaks them silently. Build all three and replay every
+  # committed corpus unit once — deterministic and seconds long. New fuzzing
+  # stays a local job (BUILD.md).
+  fuzz:
+    runs-on: ubuntu-24.04
+    name: linux · fuzz corpora
+    env:
+      CC: clang-18
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang-18 libclang-rt-18-dev
+          pipx install meson
+
+      - name: build & replay
+        env:
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          meson setup build-fuzz -Dbuildtype=debug -Db_sanitize=address,undefined -Dfuzz=true
+          ninja -C build-fuzz
+          for h in payload config cwd; do
+            ./build-fuzz/test/fuzz_$h -runs=0 test/corpus/$h
+          done
+
   # The platform release.yml ships a binary for. Apple clang is the reason the
   # hardening flags are feature-detected at all, so it needs to be seen here.
   macos:

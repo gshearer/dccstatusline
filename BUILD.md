@@ -43,9 +43,10 @@ Run tests with `meson test -C <dir>`.
 
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
 both supported compilers (gcc 14, clang 18) against both the dev and release
-configurations, the ASan/UBSan suite, and a macOS build on Apple clang. macOS is
-there deliberately — `release.yml` is the only other place it appears, and
-finding a break there means finding it with a tag already pushed.
+configurations, the ASan/UBSan suite, the fuzz harnesses replaying their
+committed corpora, and a macOS build on Apple clang. macOS is there
+deliberately — `release.yml` is the only other place it appears, and finding a
+break there means finding it with a tag already pushed.
 
 ## Release binaries
 
@@ -91,7 +92,9 @@ mkdir -p /tmp/dccfuzz-payload /tmp/dccfuzz-config /tmp/dccfuzz-cwd
 ```
 
 `fuzz_cwd`'s length cap sits just past PATH_MAX on purpose: a path too long for
-the scratch buffers has to take the refusal paths too.
+the scratch buffers has to take the refusal paths too. CI builds all three
+harnesses and replays every committed unit once (`-runs=0`) on each push; new
+fuzzing stays a local job.
 
 ## Versioning
 
