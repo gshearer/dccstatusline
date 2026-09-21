@@ -59,7 +59,7 @@ Each section renders a `format` template. Tokens:
 
 | section | tokens |
 |---|---|
-| `cwd` | `{path}` (+ key `style = abbrev\|full\|basename`) |
+| `cwd` | `{path}` (+ keys `style = abbrev\|full\|basename\|shrink\|repo`, `depth = N`, `max_len = N`) |
 | `git` | `{branch}` |
 | `model` | `{name}` `{ver}` `{effort}` `{id}` |
 | `context` | `{used}` `{ceiling}` `{pct}` |
@@ -113,7 +113,22 @@ From `workspace.current_dir` (fallback `cwd`), stat `<dir>/.git` walking toward 
 resolve relative, follow exactly one hop (worktrees, submodules). Read `<gitdir>/HEAD`:
 `ref: refs/heads/X` → branch `X` (prefix stripped, embedded slashes kept); 40/64 hex →
 first 8 characters. HEAD is always a loose file — packed-refs never needed. Anything odd
-(no repo, unreadable, oversize) → the section vanishes.
+(no repo, unreadable, oversize) → the section vanishes. The walk also reports `root_n`,
+the length of the start-dir prefix that is the repository root, which is what the cwd
+`repo` style measures against — so no second walk and no extra syscall. The walk runs
+only when something renders from it: the `git` section, or a `cwd` styled `repo`.
+
+## Shortening the cwd
+
+Three stages in `sec_cwd`, each a no-op when unconfigured, each a pure function over
+views into PATH_MAX scratch: `style` picks the base form (`abbrev`, `full`, `basename`,
+`shrink`, `repo`), `depth` decides how many trailing components survive whole — elided
+behind `…/`, or spelled one letter apiece under `shrink` — and `max_len` holds the result
+to a column budget, dropping leading components first and cutting the last one only if it
+still overflows alone. Columns are counted in codepoints, and cuts land on codepoint
+boundaries, so a multibyte directory name is neither over-charged nor sliced in half. A
+scratch buffer too small to hold a stage's output leaves the path as it was: a short
+buffer costs detail, never correctness.
 
 ## Build and versioning
 
