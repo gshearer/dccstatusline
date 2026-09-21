@@ -13,6 +13,8 @@ typedef enum
   CWD_ABBREV = 0,
   CWD_FULL,
   CWD_BASENAME,
+  CWD_SHRINK,
+  CWD_REPO,
 } cwd_style_t;
 
 // How {resets} renders. The countdown is time remaining; the clock styles are
@@ -43,6 +45,8 @@ typedef struct
   color_t sep_fg, sep_bg;
   sv_t thousands;
   cwd_style_t cwd_style;
+  uint16_t cwd_depth;      // trailing components kept whole; 0 = keep them all
+  uint16_t cwd_max_len;    // hard column budget for the rendered path; 0 = none
   section_cfg_t sec[SEC_COUNT];
 } config_t;
 
@@ -67,6 +71,7 @@ static sv_t trim(sv_t);
 static void set_global(config_t *, sv_t, sv_t);
 static void set_section(config_t *, int, sv_t, sv_t);
 static void set_resets(section_cfg_t *, sv_t);
+static bool parse_u16(sv_t, uint16_t *);
 static bool token_color(section_cfg_t *, const section_desc_t *, sv_t, sv_t);
 static void set_color(color_t *, sv_t, sv_t);
 static void parse_order(config_t *, sv_t);
