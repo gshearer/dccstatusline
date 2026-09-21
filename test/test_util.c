@@ -181,7 +181,9 @@ test_tail(void)
     { "/a/b",       9, "/a/b"               },   // fewer: nothing to drop
     { "/a/b/c/",    2, "\xe2\x80\xa6/b/c"   },   // trailing slash is not a component
     { "/a//b//c",   2, "\xe2\x80\xa6/b//c"  },
-    { "a/b/c",      2, "\xe2\x80\xa6/b/c"   },   // relative paths shorten too
+    { "ab/b/c",     2, "\xe2\x80\xa6/b/c"   },   // relative paths shorten too
+    { "a/b/c",      2, "a/b/c"              },   // …but "…/" would buy nothing
+    { "~/a/b",      2, "~/a/b"              },   // nor here: keep the ~
     { "~/src/proj", 1, "\xe2\x80\xa6/proj"  },
     { "/a/b/c/d",   0, "/a/b/c/d"           },   // depth 0 is off
     { "/",          2, "/"                  },
@@ -218,6 +220,11 @@ test_shrink(void)
     { "~/src/deep/proj",              1, "~/s/d/proj"                    },
     { "~/proj",                       1, "~/proj"                        },
     { "~",                            1, "~"                             },
+    // A dot-directory keeps its dot: "~/./n" would claim the current directory.
+    { "~/.config/nvim/lua",           1, "~/.c/n/lua"                    },
+    { "/home/u/.local/share/foo",     1, "/h/u/.l/s/foo"                 },
+    // "~" leads a component here, it is not one: collapse it like any other.
+    { "~foo/bar/baz",                 1, "~/b/baz"                       },
     { "/proj",                        1, "/proj"                         },
     { "proj",                         1, "proj"                          },
     { "/usr/bin/",                    1, "/u/bin"                        },

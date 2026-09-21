@@ -50,23 +50,22 @@ size_t file_slurp(const char *, char *, size_t);
 sv_t path_abbrev(char *, size_t, sv_t, sv_t);
 sv_t path_basename(sv_t);
 
-// The one elision mark the cwd shorteners use: three bytes, one column.
-#define DCC_ELLIPSIS     "\xe2\x80\xa6"
-#define DCC_ELLIPSIS_LEN 3
-
-// Display width of path in columns — codepoints, not bytes.
+// Width of path as the cwd budget counts it: one column per codepoint, never
+// per byte. Exact for most scripts; CJK and emoji render two columns wide.
 size_t path_cols(sv_t);
 
 // Shorteners for the cwd section. Each builds into dst and returns a view of
 // it, or returns the input view untouched when nothing applies or dst is too
 // small — so a short buffer costs detail, never correctness.
 
-// The last `depth` components behind a "…/". Unchanged when the path has no
-// more than that many, or when depth is 0.
+// The last `depth` components behind a "…/". Unchanged when depth is 0, or
+// when eliding would save no width: no more components than that, or only a
+// "/" or "~/" ahead of them.
 sv_t path_tail(char *, size_t, sv_t, unsigned);
 
-// Every component ahead of the last `keep` collapsed to its first codepoint
-// ("/m/v/s/proj"). A leading '/' or '~' is kept as punctuation.
+// Every component ahead of the last `keep` (at least one) collapsed to its
+// first codepoint, a dot-directory to its first two: "/m/v/s/proj",
+// "~/.c/nvim". A leading "/" or "~/" is kept as punctuation.
 sv_t path_shrink(char *, size_t, sv_t, unsigned);
 
 // Clamped to max_cols columns: leading components give way to "…/" first, and
@@ -74,8 +73,12 @@ sv_t path_shrink(char *, size_t, sv_t, unsigned);
 sv_t path_clamp(char *, size_t, sv_t, size_t);
 
 #ifdef UTIL_INTERNAL
+// The one elision mark the cwd shorteners use: three bytes, one column.
+#define DCC_ELLIPSIS     "\xe2\x80\xa6"
+#define DCC_ELLIPSIS_LEN 3
+
 static size_t cp_len(const char *, size_t, size_t);
-static size_t tail_start(sv_t, unsigned, unsigned *);
+static size_t tail_start(sv_t, unsigned);
 #endif
 
 #endif

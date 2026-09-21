@@ -224,14 +224,12 @@ cp_len(const char *p, size_t n, size_t i)
 }
 
 // Index where the last `n` components of path begin, ignoring trailing
-// slashes. *kept is how many were actually found: fewer than n means the path
-// has no parent to drop and 0 comes back.
+// slashes — or 0 when it holds no more than n, and so has no parent to drop.
 static size_t
-tail_start(sv_t path, unsigned n, unsigned *kept)
+tail_start(sv_t path, unsigned n)
 {
+  unsigned seen = 0;
   size_t i;
-
-  *kept = 0;
 
   while(path.n > 1 && path.p[path.n - 1] == '/') path.n--;
 
@@ -243,7 +241,7 @@ tail_start(sv_t path, unsigned n, unsigned *kept)
 
     while(start && path.p[start - 1] != '/') start--;
 
-    if(start < i && ++*kept == n) return(start);
+    if(start < i && ++seen == n) return(start);
 
     if(!start) break;
 
@@ -257,26 +255,20 @@ sv_t
 path_tail(char *dst, size_t cap, sv_t path, unsigned depth)
 {
   size_t i, n;
-  unsigned kept;
-  sv_t out;
+  sv_t head, out;
 
   if(!depth) return(path);
 
   while(path.n > 1 && path.p[path.n - 1] == '/') path.n--;
 
-  i = tail_start(path, depth, &kept);
+  i = tail_start(path, depth);
 
-  if(!i || kept < depth) return(path);   // nothing to drop: the path is its own tail
+  // Eliding has to buy width. "…/" costs two columns, so a bare root "/" or a
+  // "~/" ahead of the kept components stays as it stands.
+  head.p = path.p;
+  head.n = i;
 
-  // What lies ahead may be only the root slash, and "…//a/b" would say nothing.
-  {
-    size_t j;
-
-    for(j = 0; j < i; j++)
-      if(path.p[j] != '/') break;
-
-    if(j == i) return(path);
-  }
+  if(path_cols(head) <= 2) return(path);
 
   n = path.n - i;
 
@@ -296,40 +288,27 @@ path_tail(char *dst, size_t cap, sv_t path, unsigned depth)
 sv_t
 path_shrink(char *dst, size_t cap, sv_t path, unsigned keep)
 {
-  size_t bstart, i = 0, out = 0;
-  unsigned kept;
+  size_t bstart, i = 0, out;
   sv_t res;
 
   if(!keep) keep = 1;
 
   while(path.n > 1 && path.p[path.n - 1] == '/') path.n--;
 
-  bstart = tail_start(path, keep, &kept);
+  bstart = tail_start(path, keep);
 
   if(!bstart) return(path);   // nothing ahead of the kept components to collapse
 
-  // A leading '/' or '~' is punctuation, not a component: copy it as it stands.
-  if(path.p[0] == '/')
-  {
-    if(out + 2 > cap) return(path);
+  // A leading "/" or "~/" is punctuation, not a component: copy it as it
+  // stands. A nonzero bstart means at least two bytes, so p[1] is there.
+  if(path.p[0] == '/') i = 1;
 
-    dst[out++] = '/';
-    i = 1;
-  }
+  else if(path.p[0] == '~' && path.p[1] == '/') i = 2;
 
-  else if(path.p[0] == '~')
-  {
-    size_t len = cp_len(path.p, path.n, 0);
+  if(i >= cap) return(path);
 
-    if(out + len + 2 > cap) return(path);
-
-    memcpy(dst + out, path.p, len);
-    out += len;
-    i = len;
-
-    // "~" is a component, not a root: it needs its own separator back.
-    if(i < path.n) dst[out++] = '/';
-  }
+  memcpy(dst, path.p, i);
+  out = i;
 
   while(i < bstart)
   {
@@ -340,6 +319,11 @@ path_shrink(char *dst, size_t cap, sv_t path, unsigned keep)
     if(i > start)
     {
       len = cp_len(path.p, i, start);
+
+      // A dot-directory keeps its dot and one codepoint more: a lone "."
+      // would read as the current directory.
+      if(path.p[start] == '.' && start + len < i)
+        len += cp_len(path.p, i, start + len);
 
       if(out + len + 1 + 1 > cap) return(path);
 
@@ -366,42 +350,38 @@ path_shrink(char *dst, size_t cap, sv_t path, unsigned keep)
 sv_t
 path_clamp(char *dst, size_t cap, sv_t path, size_t max_cols)
 {
-  size_t i, bstart, want, cols, cut;
-  unsigned kept;
+  size_t i, bstart, want, cols, cut, total = path_cols(path), seen = 0;
   sv_t out;
 
-  if(!max_cols || path_cols(path) <= max_cols) return(path);
+  if(!max_cols || total <= max_cols) return(path);
 
-  bstart = tail_start(path, 1, &kept);
+  bstart = tail_start(path, 1);
 
   // Drop whole leading components while that is enough: "…/" plus the rest.
+  // seen counts the columns of path[0..i], so whatever follows a '/' at i
+  // spans total - seen of them: one pass, however deep the path.
   for(i = 0; i < bstart; i++)
   {
-    sv_t rest;
+    size_t rest = path.n - i - 1;
 
-    if(path.p[i] != '/' || i + 1 >= path.n) continue;
+    if(((unsigned char)path.p[i] & 0xc0) != 0x80) seen++;
 
-    rest.p = path.p + i + 1;
-    rest.n = path.n - i - 1;
+    if(path.p[i] != '/' || total - seen + 2 > max_cols) continue;
 
-    if(path_cols(rest) + 2 > max_cols) continue;
-
-    if(cap < DCC_ELLIPSIS_LEN + 1 + rest.n + 1) return(path);
+    if(cap < DCC_ELLIPSIS_LEN + 1 + rest + 1) return(path);
 
     memcpy(dst, DCC_ELLIPSIS, DCC_ELLIPSIS_LEN);
     dst[DCC_ELLIPSIS_LEN] = '/';
-    memcpy(dst + DCC_ELLIPSIS_LEN + 1, rest.p, rest.n);
+    memcpy(dst + DCC_ELLIPSIS_LEN + 1, path.p + i + 1, rest);
 
     out.p = dst;
-    out.n = DCC_ELLIPSIS_LEN + 1 + rest.n;
+    out.n = DCC_ELLIPSIS_LEN + 1 + rest;
     dst[out.n] = '\0';
 
     return(out);
   }
 
   // Even the last component overflows: keep its final columns behind one "…".
-  if(cap < DCC_ELLIPSIS_LEN + 1) return(path);
-
   want = max_cols - 1;
   cols = 0;
   cut = path.n;

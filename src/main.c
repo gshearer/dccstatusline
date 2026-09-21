@@ -84,12 +84,10 @@ want_git(const config_t *cfg)
 {
   size_t i;
 
-  if(cfg->cwd_style == CWD_REPO)
-    for(i = 0; i < cfg->norder; i++)
-      if(cfg->order[i] == SEC_CWD) return(true);
-
   for(i = 0; i < cfg->norder; i++)
-    if(cfg->order[i] == SEC_GIT) return(true);
+    if(cfg->order[i] == SEC_GIT
+       || (cfg->order[i] == SEC_CWD && cfg->cwd_style == CWD_REPO))
+      return(true);
 
   return(false);
 }
