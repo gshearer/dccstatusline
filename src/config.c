@@ -52,6 +52,8 @@ config_defaults(config_t *cfg)
   cfg->sep_fg = dim;
   cfg->thousands = sv_from_cstr(",");
   cfg->cwd_style = CWD_ABBREV;
+  cfg->cwd_depth = 0;
+  cfg->cwd_max_len = 0;
 
   sc = &cfg->sec[SEC_CWD];
   sc->format = sv_from_cstr("{path}");
@@ -246,6 +248,30 @@ token_color(section_cfg_t *sc, const section_desc_t *desc, sv_t key, sv_t value)
   return(true);
 }
 
+// A plain unsigned decimal, 0..65535. Anything else — empty, signed, trailing
+// junk, overflow — fails whole, so the caller keeps its default.
+static bool
+parse_u16(sv_t v, uint16_t *out)
+{
+  uint32_t acc = 0;
+  size_t i;
+
+  if(!v.n) return(false);
+
+  for(i = 0; i < v.n; i++)
+  {
+    if(v.p[i] < '0' || v.p[i] > '9') return(false);
+
+    acc = acc * 10 + (uint32_t)(v.p[i] - '0');
+
+    if(acc > UINT16_MAX) return(false);
+  }
+
+  *out = (uint16_t)acc;
+
+  return(true);
+}
+
 static void
 set_resets(section_cfg_t *sc, sv_t value)
 {
@@ -284,8 +310,26 @@ set_section(config_t *cfg, int id, sv_t key, sv_t value)
 
     else if(sv_eq_cstr(value, "basename")) cfg->cwd_style = CWD_BASENAME;
 
+    else if(sv_eq_cstr(value, "shrink")) cfg->cwd_style = CWD_SHRINK;
+
+    else if(sv_eq_cstr(value, "repo")) cfg->cwd_style = CWD_REPO;
+
     else fprintf(stderr, "dccstatusline: config: bad cwd style: %.*s\n",
                  (int)value.n, value.p);
+  }
+
+  else if(id == SEC_CWD && sv_eq_cstr(key, "depth"))
+  {
+    if(!parse_u16(value, &cfg->cwd_depth))
+      fprintf(stderr, "dccstatusline: config: bad cwd depth: %.*s\n",
+              (int)value.n, value.p);
+  }
+
+  else if(id == SEC_CWD && sv_eq_cstr(key, "max_len"))
+  {
+    if(!parse_u16(value, &cfg->cwd_max_len))
+      fprintf(stderr, "dccstatusline: config: bad cwd max_len: %.*s\n",
+              (int)value.n, value.p);
   }
 
   else token_color(sc, &dcc_sections[id], key, value);

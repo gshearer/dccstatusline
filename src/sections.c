@@ -176,19 +176,42 @@ name_carries_ver(sv_t name, sv_t ver)
   return(name.n == ver.n || name.p[name.n - ver.n - 1] == ' ');
 }
 
-static void
-sec_cwd(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
+// The repository root plus everything below it: the root's own directory name
+// is the first component, so the path still says which project this is.
+static sv_t
+path_from_repo(sv_t path, const gitinfo_t *git)
 {
-  static char abbrev[PATH_MAX];
+  sv_t out;
+  size_t i;
+
+  if(!git->present || !git->root_n || git->root_n > path.n) return(path);
+
+  i = git->root_n;
+
+  while(i && path.p[i - 1] != '/') i--;
+
+  out.p = path.p + i;
+  out.n = path.n - i;
+
+  return(out.n ? out : path);
+}
+
+static void
+sec_cwd(sbuf_t *sb, const payload_t *pay, const config_t *cfg,
+        const gitinfo_t *git)
+{
+  static char styled[PATH_MAX], shortened[PATH_MAX], clamped[PATH_MAX];
   tokset_t ts = { .n = 0 };
   sv_t path = pay->cwd;
 
   if(!pay->has_cwd) return;
 
+  // Three stages, each a no-op when unconfigured: pick the base form, keep the
+  // last `depth` components, then hold the whole thing under `max_len`.
   switch(cfg->cwd_style)
   {
     case CWD_ABBREV:
-      path = path_abbrev(abbrev, sizeof abbrev, path,
+      path = path_abbrev(styled, sizeof styled, path,
                          sv_from_cstr(getenv("HOME")));
       break;
 
@@ -196,9 +219,33 @@ sec_cwd(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
       path = path_basename(path);
       break;
 
+    case CWD_SHRINK:
+      // $HOME still earns its `~`: a collapsed "/U/d/..." would say less.
+      path = path_abbrev(styled, sizeof styled, path,
+                         sv_from_cstr(getenv("HOME")));
+      path = path_shrink(shortened, sizeof shortened, path, cfg->cwd_depth);
+      break;
+
+    case CWD_REPO:
+      path = path_from_repo(path, git);
+
+      // Outside a repository there is nothing to be relative to: abbreviate.
+      if(path.p == pay->cwd.p && path.n == pay->cwd.n)
+        path = path_abbrev(styled, sizeof styled, path,
+                           sv_from_cstr(getenv("HOME")));
+      break;
+
     case CWD_FULL:
       break;
   }
+
+  // shrink spends depth on the components it keeps whole, so it has already
+  // honoured it; every other style drops the leading ones outright.
+  if(cfg->cwd_style != CWD_SHRINK)
+    path = path_tail(shortened, sizeof shortened, path, cfg->cwd_depth);
+
+  // A separate buffer: clamping reads the stage before it, which may be `shortened`.
+  path = path_clamp(clamped, sizeof clamped, path, cfg->cwd_max_len);
 
   add_tok(&ts, SEC_CWD, cfg, "label", cfg->sec[SEC_CWD].label);
   add_tok(&ts, SEC_CWD, cfg, "path", path);
@@ -321,7 +368,7 @@ render_section(sbuf_t *sb, section_id_t id, const payload_t *pay,
 {
   switch(id)
   {
-    case SEC_CWD:        sec_cwd(sb, pay, cfg); break;
+    case SEC_CWD:        sec_cwd(sb, pay, cfg, git); break;
     case SEC_GIT:        sec_git(sb, cfg, git); break;
     case SEC_MODEL:      sec_model(sb, pay, cfg); break;
     case SEC_CONTEXT:    sec_context(sb, pay, cfg); break;
