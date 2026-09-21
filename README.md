@@ -22,7 +22,9 @@ zero forks, zero heap allocations, one write, exit 0.
 
 ## What you get
 
-- 🗂️ **cwd** — full, `~`-abbreviated, or basename
+- 🗂️ **cwd** — full, `~`-abbreviated, basename, one-letter-shrunk, or relative to the
+  git repository root, and width-bounded by trailing-component depth or a hard
+  column budget, so a deep work tree never eats half the line
 - 🌿 **git branch** — read straight from `.git/HEAD` (worktrees and submodules
   included), never by spawning `git`; detached HEAD shows the short SHA
 - 🤖 **model** — name, version derived from the model id, and effort level
@@ -135,11 +137,15 @@ pct_fg  = bright_cyan
 [plan_long]
 format = {window} {pct} ↻{resets}
 resets = clock                     # "7d 41% ↻Mon 14:30"
+
+[cwd]
+style   = repo                     # …/acme/platform/terraform/app → platform/terraform/app
+max_len = 28                       # and never wider than 28 columns
 ```
 
 | section | tokens |
 |---|---|
-| `cwd` | `{path}` — plus `style = abbrev \| full \| basename` |
+| `cwd` | `{path}` — plus `style = abbrev \| full \| basename \| shrink \| repo`, `depth = N`, `max_len = N` |
 | `git` | `{branch}` |
 | `model` | `{name}` `{ver}` `{effort}` `{id}` |
 | `context` | `{used}` `{ceiling}` `{pct}` |
@@ -147,6 +153,34 @@ resets = clock                     # "7d 41% ↻Mon 14:30"
 
 Every section also has `{label}`, filled from its `label =` key, and takes
 `fg`/`bg` for its literal text plus `<token>_fg` / `<token>_bg` per token.
+
+### Keeping the cwd short
+
+A deep monorepo path — `/mnt/volumes/source/acme/platform/terraform/projects-modular`
+and its like — is wider than the rest of the line put together. The `cwd`
+section shortens in three independent stages — base form, then depth, then a
+hard column budget — and whatever it elides becomes a single `…`:
+
+| config | result |
+|---|---|
+| *(default)* `style = abbrev` | `/mnt/volumes/source/acme/platform/terraform/projects-modular` |
+| `depth = 2` | `…/terraform/projects-modular` |
+| `max_len = 30` | `…/terraform/projects-modular` |
+| `style = shrink` | `/m/v/s/a/p/t/projects-modular` |
+| `style = shrink` + `depth = 4` | `/m/v/s/acme/platform/terraform/projects-modular` |
+| `style = repo` | `platform/terraform/projects-modular` |
+| `style = repo` + `max_len = 24` | `…/projects-modular` |
+
+- **`depth = N`** keeps the last N components whole. Under `style = shrink` those
+  N stay spelled out and the rest collapse to a letter each; under every other
+  style the rest simply go.
+- **`max_len = N`** is a promise about width in columns: leading components give
+  way first, and only a last component that still overflows alone gets cut.
+  Columns are codepoints, and cuts land on codepoint boundaries, so `pröjekt`
+  is never sliced mid-character.
+- **`style = repo`** is the one that keeps meaning per column: the path below the
+  git root, the root's own directory name included, so you still see which
+  project you are in. Outside a repository it falls back to `abbrev`.
 
 ## Under the hood
 
