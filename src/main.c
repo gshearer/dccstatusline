@@ -77,10 +77,16 @@ write_all(const char *buf, size_t len)
   return(true);
 }
 
+// The .git walk is worth its syscalls only if something renders from it: the
+// git section itself, or a cwd asked to be relative to the repository root.
 static bool
 want_git(const config_t *cfg)
 {
   size_t i;
+
+  if(cfg->cwd_style == CWD_REPO)
+    for(i = 0; i < cfg->norder; i++)
+      if(cfg->order[i] == SEC_CWD) return(true);
 
   for(i = 0; i < cfg->norder; i++)
     if(cfg->order[i] == SEC_GIT) return(true);
@@ -94,7 +100,7 @@ main(int argc, char **argv)
   static const char fallback[] = "\x1b[0;2m" DCC_BUILD_STRING "\x1b[0m\n";
   config_t cfg;
   payload_t pay;
-  gitinfo_t git = { false, "", 0 };
+  gitinfo_t git = { false, "", 0, 0 };
   sbuf_t line;
   size_t n;
 

@@ -56,7 +56,7 @@ hex_run(const char *p, size_t n)
 }
 
 static bool
-parse_head(const char *buf, size_t n, gitinfo_t *out)
+parse_head(const char *buf, size_t n, size_t root_n, gitinfo_t *out)
 {
   sv_t s = { buf, n };
 
@@ -79,6 +79,7 @@ parse_head(const char *buf, size_t n, gitinfo_t *out)
     out->n = s.n;
     out->name[s.n] = '\0';
     out->present = true;
+    out->root_n = root_n;
 
     return(true);
   }
@@ -89,6 +90,7 @@ parse_head(const char *buf, size_t n, gitinfo_t *out)
     out->n = 8;
     out->name[8] = '\0';
     out->present = true;
+    out->root_n = root_n;
 
     return(true);
   }
@@ -104,6 +106,7 @@ gitinfo_read(sv_t start_dir, gitinfo_t *out)
 
   out->present = false;
   out->n = 0;
+  out->root_n = 0;
   out->name[0] = '\0';
 
   if(!dirlen || dirlen >= sizeof dir) return;
@@ -121,7 +124,7 @@ gitinfo_read(sv_t start_dir, gitinfo_t *out)
 
     got = read_small(path, head, sizeof head - 1);
 
-    if(got > 0 && parse_head(head, (size_t)got, out)) return;
+    if(got > 0 && parse_head(head, (size_t)got, dirlen, out)) return;
 
     if(got < 0 && errno == ENOTDIR)
     {
@@ -157,7 +160,7 @@ gitinfo_read(sv_t start_dir, gitinfo_t *out)
 
         got = read_small(gitdir, head, sizeof head - 1);
 
-        if(got > 0) parse_head(head, (size_t)got, out);
+        if(got > 0) parse_head(head, (size_t)got, dirlen, out);
 
         return;
       }
