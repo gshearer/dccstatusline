@@ -19,6 +19,7 @@ static bool put_file(const char *, const char *);
 static bool put_dir(const char *);
 static void expect(const char *, const char *, const char *);
 static void test_variants(void);
+static void test_root(void);
 
 static bool
 join(char *dst, size_t cap, const char *rel)
@@ -146,6 +147,40 @@ test_variants(void)
   }
 }
 
+static void
+test_root(void)
+{
+  char path[PATH_MAX];
+  gitinfo_t g;
+
+  // root_n is the prefix of start_dir that is the repository root, however
+  // many levels up it was found — it is what the cwd `repo` style measures.
+  CHECK(join(path, sizeof path, "repo1"), "root: path fits");
+  gitinfo_read(sv_from_cstr(path), &g);
+  CHECK(g.present && g.root_n == strlen(path),
+        "root at the start dir (got %zu want %zu)", g.root_n, strlen(path));
+
+  CHECK(join(path, sizeof path, "repo1/a/b"), "root: nested path fits");
+  gitinfo_read(sv_from_cstr(path), &g);
+  CHECK(g.present && g.root_n == strlen(path) - 4,
+        "root two levels up (got %zu want %zu)", g.root_n, strlen(path) - 4);
+
+  // A trailing slash is not part of the root.
+  CHECK(join(path, sizeof path, "repo1/a/"), "root: trailing slash fits");
+  gitinfo_read(sv_from_cstr(path), &g);
+  CHECK(g.present && g.root_n == strlen(path) - 3,
+        "trailing slash ignored (got %zu want %zu)", g.root_n, strlen(path) - 3);
+
+  // The worktree hop reports the directory holding the .git file.
+  CHECK(join(path, sizeof path, "repo6/wt"), "root: worktree path fits");
+  gitinfo_read(sv_from_cstr(path), &g);
+  CHECK(g.present && g.root_n == strlen(path),
+        "worktree root (got %zu want %zu)", g.root_n, strlen(path));
+
+  gitinfo_read(sv_from_cstr("/nonexistent-dccstatusline-void"), &g);
+  CHECK(!g.present && g.root_n == 0, "no repo leaves root_n zero");
+}
+
 int
 main(void)
 {
@@ -158,6 +193,7 @@ main(void)
   }
 
   test_variants();
+  test_root();
 
   return(check_failures ? 1 : 0);
 }

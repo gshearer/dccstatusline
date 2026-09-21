@@ -1,0 +1,11 @@
+[statusline]
+sections = cwd git
+[cwd]
+style = shrink
+depth = 3
+max_len = 28
+fg = bright_blue
+[cwd]
+style = repo
+depth = 0
+max_len = 0

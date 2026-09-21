@@ -33,6 +33,7 @@ static void test_ver_table(void);
 static void test_ver_suppression(void);
 static void test_resets_styles(void);
 static void test_resets_default(void);
+static void test_cwd_styles(void);
 static void test_ansi_exact(void);
 
 // Colors off everywhere: expectations read as plain text. SGR bytes are
@@ -136,7 +137,7 @@ test_full_line(void)
 {
   config_t cfg;
   payload_t pay = sample();
-  gitinfo_t git = { true, "main", 4 };
+  gitinfo_t git = { true, "main", 4, 0 };
   char out[1024];
   size_t n;
 
@@ -154,7 +155,7 @@ test_vanishing(void)
 {
   config_t cfg;
   payload_t pay = sample();
-  gitinfo_t nogit = { false, "", 0 };
+  gitinfo_t nogit = { false, "", 0, 0 };
   char out[1024];
   size_t n;
 
@@ -183,7 +184,7 @@ test_derived_pct(void)
 {
   config_t cfg;
   payload_t pay;
-  gitinfo_t nogit = { false, "", 0 };
+  gitinfo_t nogit = { false, "", 0, 0 };
   char ini[] = "[statusline]\nsections = context\n";
   char out[256];
   size_t n;
@@ -219,7 +220,7 @@ test_ver_table(void)
     { "utterly-alien",              ""    },
   };
   config_t cfg;
-  gitinfo_t nogit = { false, "", 0 };
+  gitinfo_t nogit = { false, "", 0, 0 };
   char ini[] = "[statusline]\nsections = model\n[model]\nformat = {ver}\n";
   size_t i;
 
@@ -256,7 +257,7 @@ test_ver_suppression(void)
     { "GPT-5",   "claude-fable-5",           "GPT-5 5"  },   // '-' is no word break
   };
   config_t cfg;
-  gitinfo_t nogit = { false, "", 0 };
+  gitinfo_t nogit = { false, "", 0, 0 };
   char ini[] = "[statusline]\nsections = model\n[model]\nformat = {name} {ver}\n";
   size_t i;
 
@@ -318,7 +319,7 @@ test_resets_styles(void)
     plan_slot_t slot = rows[i].longw ? PLAN_LONG : PLAN_SHORT;
     config_t cfg;
     payload_t pay;
-    gitinfo_t nogit = { false, "", 0 };
+    gitinfo_t nogit = { false, "", 0, 0 };
     char ini[256], out[256];
     size_t n;
     int len = snprintf(ini, sizeof ini,
@@ -350,7 +351,7 @@ test_resets_default(void)
 {
   config_t cfg;
   payload_t pay;
-  gitinfo_t nogit = { false, "", 0 };
+  gitinfo_t nogit = { false, "", 0, 0 };
   char ini[] = "[statusline]\nsections = plan_short\n";
   char out[256];
   size_t n;
@@ -373,11 +374,71 @@ test_resets_default(void)
 }
 
 static void
+test_cwd_styles(void)
+{
+  static const struct
+  {
+    const char *cwd, *ini, *want;
+  } rows[] =
+  {
+    // A repository two levels up: the root's own name leads the path.
+    { "/src/repo/a/b", "[cwd]\nstyle = repo\n",            "repo/a/b"          },
+    { "/src/repo",     "[cwd]\nstyle = repo\n",            "repo"              },
+    // Outside a repository, repo has nothing to measure against: abbreviate.
+    { "/home/u/proj",  "[cwd]\nstyle = repo\n",            "~/proj"            },
+
+    { "/a/b/c/proj",   "[cwd]\ndepth = 2\n",               "\xe2\x80\xa6/c/proj" },
+    { "/a/b/c/proj",   "[cwd]\nmax_len = 8\n",             "\xe2\x80\xa6/c/proj" },
+    { "/a/b/c/proj",   "[cwd]\nmax_len = 7\n",             "\xe2\x80\xa6/proj"   },
+    { "/a/bb/cc/proj", "[cwd]\nstyle = shrink\n",          "/a/b/c/proj"       },
+    { "/a/bb/cc/proj", "[cwd]\nstyle = shrink\ndepth = 2\n", "/a/b/cc/proj"    },
+    // The stages compose: shrink first, then the column budget.
+    { "/aa/bb/cc/proj-with-a-long-name",
+      "[cwd]\nstyle = shrink\nmax_len = 10\n",             "\xe2\x80\xa6long-name" },
+    // depth on top of repo: the repository name gives way like any other.
+    { "/src/repo/a/b", "[cwd]\nstyle = repo\ndepth = 2\n", "\xe2\x80\xa6/a/b"  },
+  };
+  size_t i;
+
+  CHECK(setenv("HOME", "/home/u", 1) == 0, "setenv HOME");
+
+  for(i = 0; i < sizeof rows / sizeof rows[0]; i++)
+  {
+    config_t cfg;
+    payload_t pay;
+    gitinfo_t git = { true, "main", 4, 9 };   // "/src/repo" is the root
+    char ini[128], out[256];
+    size_t n;
+
+    memset(&pay, 0, sizeof pay);
+    pay.has_cwd = true;
+    pay.cwd = sv_from_cstr(rows[i].cwd);
+
+    if(strncmp(rows[i].cwd, "/src/repo", 9) != 0)
+    {
+      git.present = false;
+      git.root_n = 0;
+    }
+
+    memcpy(ini, rows[i].ini, strlen(rows[i].ini) + 1);
+
+    config_defaults(&cfg);
+    plain(&cfg);
+    config_load(&cfg, ini, strlen(rows[i].ini));
+    cfg.norder = 1;
+    cfg.order[0] = SEC_CWD;
+
+    render_plain(&pay, &cfg, &git, out, &n);
+    CHECK_MEM(out, n, rows[i].want);
+  }
+}
+
+static void
 test_ansi_exact(void)
 {
   config_t cfg;
   payload_t pay;
-  gitinfo_t git = { true, "main", 4 };
+  gitinfo_t git = { true, "main", 4, 0 };
   char ini[] = "[statusline]\nsections = git\n";
   static char mem[256];
   sbuf_t sb;
@@ -400,6 +461,7 @@ main(void)
   test_ver_suppression();
   test_resets_styles();
   test_resets_default();
+  test_cwd_styles();
   test_ansi_exact();
 
   return(check_failures ? 1 : 0);
