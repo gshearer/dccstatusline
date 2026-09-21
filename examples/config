@@ -41,10 +41,26 @@ thousands = ,
 
 # ── cwd ────────────────────────────────────────────────────────────────
 # Tokens: {label} {path}
+#
+# Three stages, each off by default: `style` picks the base form, `depth`
+# says how many trailing components stay whole, `max_len` is a hard column
+# budget. Whatever is elided becomes a single "…".
+#
+#   style = abbrev    ~ for an exact $HOME prefix          ~/src/proj
+#   style = full      exactly what Claude Code sent        /home/u/src/proj
+#   style = basename  the last component alone             proj
+#   style = shrink    leading components to one letter     /h/u/s/proj
+#   style = repo      relative to the git root, root incl. proj
+#
+#   depth = 2         …/src/proj  — with style = shrink, the last two
+#                     components stay whole instead: /h/u/src/proj
+#   max_len = 24      drops leading components, then cuts the last one
 [cwd]
-format = {path}
-style  = abbrev          # abbrev (~ for $HOME) | full | basename
-fg     = bright_blue
+format  = {path}
+style   = abbrev         # abbrev (~ for $HOME) | full | basename | shrink | repo
+depth   = 0              # trailing components kept whole; 0 = all of them
+max_len = 0              # column budget for the rendered path; 0 = unbounded
+fg      = bright_blue
 
 # ── git ────────────────────────────────────────────────────────────────
 # Tokens: {label} {branch} — branch name, or an 8-hex short SHA when
