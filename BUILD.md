@@ -69,17 +69,29 @@ build retains all three.
 
 ## Fuzzing
 
-The fuzz build produces libFuzzer harnesses for the two parsers that face
-external input — the stdin payload (JSON) and the config file (INI) — both
-driven through the full render path under ASan/UBSan. Give each a scratch
-corpus dir first (it receives newly discovered units) and the pristine seeds
-second:
+The fuzz build produces three libFuzzer harnesses, all under ASan/UBSan. Two
+cover the parsers that face external input — the stdin payload (JSON) and the
+config file (INI) — each driven through the full render path. The third,
+`fuzz_cwd`, takes five knob bytes (style, depth, max_len, repository root, buffer
+cap) and then a hostile working directory, and asserts what the cwd shorteners
+promise rather than merely that they survive: never over budget, never wider
+than their input, never a codepoint cut in half.
+
+The sanitize build lets UBSan report and carry on, so tell it to halt or its
+findings scroll past as log lines instead of landing as crash files. Give each
+harness a scratch corpus dir first (it receives newly discovered units) and the
+pristine seeds second:
 
 ```sh
-mkdir -p /tmp/dccfuzz-payload /tmp/dccfuzz-config
+export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
+mkdir -p /tmp/dccfuzz-payload /tmp/dccfuzz-config /tmp/dccfuzz-cwd
 ./build-fuzz/test/fuzz_payload /tmp/dccfuzz-payload test/corpus/payload -max_total_time=60 -max_len=65536
 ./build-fuzz/test/fuzz_config  /tmp/dccfuzz-config  test/corpus/config  -max_total_time=60 -max_len=32768
+./build-fuzz/test/fuzz_cwd     /tmp/dccfuzz-cwd     test/corpus/cwd     -max_total_time=60 -max_len=4200
 ```
+
+`fuzz_cwd`'s length cap sits just past PATH_MAX on purpose: a path too long for
+the scratch buffers has to take the refusal paths too.
 
 ## Versioning
 

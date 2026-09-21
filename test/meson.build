@@ -12,7 +12,7 @@ test('cli', executable('test_cli', 'test_cli.c'),
 
 # libFuzzer harnesses (clang): seed corpora live in test/corpus/.
 if get_option('fuzz')
-  foreach name : ['payload', 'config']
+  foreach name : ['payload', 'config', 'cwd']
     executable('fuzz_' + name, 'fuzz_' + name + '.c',
       include_directories: dcc_inc,
       link_with: dcccore,

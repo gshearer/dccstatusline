@@ -1,0 +1,6 @@
+[st git
+[cwd]
+q
+depth  k
+depth = 2
+maxlen = 0

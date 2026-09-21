@@ -1,0 +1,9 @@
+[statusline]
+sections git
+[cwd]
+style = shrink
+depth = 3
+max_len = 28
+fg = bright_= repo
+depth = 1
+ma_leezn = 0
