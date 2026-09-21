@@ -45,8 +45,8 @@ typedef struct
   color_t sep_fg, sep_bg;
   sv_t thousands;
   cwd_style_t cwd_style;
-  uint16_t cwd_depth;      // trailing components kept whole; 0 = keep them all
-  uint16_t cwd_max_len;    // hard column budget for the rendered path; 0 = none
+  uint16_t cwd_depth;      // trailing components kept whole; 0 = off
+  uint16_t cwd_max_len;    // codepoint budget for the rendered path; 0 = off
   section_cfg_t sec[SEC_COUNT];
 } config_t;
 

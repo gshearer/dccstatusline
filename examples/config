@@ -43,23 +43,26 @@ thousands = ,
 # Tokens: {label} {path}
 #
 # Three stages, each off by default: `style` picks the base form, `depth`
-# says how many trailing components stay whole, `max_len` is a hard column
-# budget. Whatever is elided becomes a single "…".
+# says how many trailing components stay whole, and `max_len` is a hard
+# budget in characters. Whatever is elided becomes a single "…". With $HOME
+# at /home/u and a repository rooted at /home/u/src/acme:
 #
-#   style = abbrev    ~ for an exact $HOME prefix          ~/src/proj
-#   style = full      exactly what Claude Code sent        /home/u/src/proj
-#   style = basename  the last component alone             proj
-#   style = shrink    leading components to one letter     /h/u/s/proj
-#   style = repo      relative to the git root, root incl. proj
+#   style = abbrev    ~ for an exact $HOME prefix      ~/src/acme/proj
+#   style = full      exactly what Claude Code sent    /home/u/src/acme/proj
+#   style = basename  the last component alone         proj
+#   style = shrink    abbrev, then one letter apiece   ~/s/a/proj
+#                     (dot-directories keep the dot: ~/.config → ~/.c)
+#   style = repo      from the repository's name down  acme/proj
 #
-#   depth = 2         …/src/proj  — with style = shrink, the last two
-#                     components stay whole instead: /h/u/src/proj
-#   max_len = 24      drops leading components, then cuts the last one
+#   depth = 2         …/acme/proj — with style = shrink, the last two
+#                     components stay whole instead: ~/s/acme/proj
+#   max_len = 8       …/proj — leading components go first, then the last
+#                     one is cut; CJK and emoji render two columns wide
 [cwd]
 format  = {path}
-style   = abbrev         # abbrev (~ for $HOME) | full | basename | shrink | repo
-depth   = 0              # trailing components kept whole; 0 = all of them
-max_len = 0              # column budget for the rendered path; 0 = unbounded
+style   = abbrev         # abbrev | full | basename | shrink | repo
+depth   = 0              # trailing components kept whole; 0 = off
+max_len = 0              # character budget for the rendered path; 0 = off
 fg      = bright_blue
 
 # ── git ────────────────────────────────────────────────────────────────

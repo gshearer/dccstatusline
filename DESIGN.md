@@ -122,13 +122,16 @@ only when something renders from it: the `git` section, or a `cwd` styled `repo`
 
 Three stages in `sec_cwd`, each a no-op when unconfigured, each a pure function over
 views into PATH_MAX scratch: `style` picks the base form (`abbrev`, `full`, `basename`,
-`shrink`, `repo`), `depth` decides how many trailing components survive whole — elided
-behind `…/`, or spelled one letter apiece under `shrink` — and `max_len` holds the result
-to a column budget, dropping leading components first and cutting the last one only if it
-still overflows alone. Columns are counted in codepoints, and cuts land on codepoint
-boundaries, so a multibyte directory name is neither over-charged nor sliced in half. A
-scratch buffer too small to hold a stage's output leaves the path as it was: a short
-buffer costs detail, never correctness.
+`shrink`, `repo`), `depth` decides how many trailing components survive whole — the rest
+elided behind `…/` only where that saves width (a lone `/` or `~/` stays), or spelled one
+letter apiece under `shrink`, a dot-directory keeping its dot — and `max_len` holds the
+result to a budget, dropping leading components first and cutting the last one only if it
+still overflows alone, all in one pass. The budget counts codepoints, which is exact for
+most scripts and short for CJK and emoji, two columns wide each: a width table was judged
+not worth carrying, and `wcwidth` answers nothing useful in the C locale. Cuts land on
+codepoint boundaries, so a multibyte directory name is never sliced in half. A scratch
+buffer too small to hold a stage's output leaves the path as it was: a short buffer costs
+detail, never correctness.
 
 ## Build and versioning
 
