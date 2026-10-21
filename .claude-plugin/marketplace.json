@@ -1,0 +1,12 @@
+{
+  "name": "dccstatusline",
+  "description": "dccstatusline, the pure-C Claude Code status line",
+  "owner": { "name": "George Shearer" },
+  "plugins": [
+    {
+      "name": "dccstatusline",
+      "source": "./plugin",
+      "description": "Pure-C Claude Code status line: zero dependencies, ~250 µs per refresh"
+    }
+  ]
+}

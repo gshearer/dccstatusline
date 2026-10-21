@@ -100,6 +100,17 @@ jobs:
             ./build-fuzz/test/fuzz_$h -runs=0 test/corpus/$h
           done
 
+  # The plugin carries its own copy of the reference config, because only the
+  # plugin directory reaches the plugin cache. The two copies must not drift.
+  plugin:
+    runs-on: ubuntu-24.04
+    name: plugin · reference config
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: config copy matches
+        run: cmp examples/config plugin/skills/configure/config.example
+
   # The platform release.yml ships a binary for. Apple clang is the reason the
   # hardening flags are feature-detected at all, so it needs to be seen here.
   macos:
