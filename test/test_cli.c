@@ -16,21 +16,26 @@
 extern char **environ;
 
 static const char *dcc_bin;
+static const char *ref_path;
 
-static bool run_bin(const char *, size_t, char *, size_t, size_t *);
+static bool run_bin(const char *, const char *, size_t, char *, size_t, size_t *);
 static void expect_line(const char *, const char *, const char *);
 static void expect_fallback(const char *, size_t, const char *);
 static void test_styled(void);
 static void test_cwd_shortened(void);
 static void test_failure_modes(void);
+static void test_print_config(void);
+static void test_reference_is_default(void);
 
+// arg is the one optional command-line argument; NULL runs the bare binary.
 static bool
-run_bin(const char *in, size_t inlen, char *out, size_t outcap, size_t *outlen)
+run_bin(const char *arg, const char *in, size_t inlen,
+        char *out, size_t outcap, size_t *outlen)
 {
   posix_spawn_file_actions_t fa;
   pid_t pid;
   int inpipe[2], outpipe[2], status;
-  char *argv[] = { (char *)dcc_bin, NULL };
+  char *argv[] = { (char *)dcc_bin, (char *)arg, NULL };
   size_t used = 0;
 
   if(pipe(inpipe) != 0 || pipe(outpipe) != 0) return(false);
@@ -99,7 +104,7 @@ expect_line(const char *payload, const char *want, const char *what)
   char out[8192];
   size_t n = 0;
 
-  CHECK(run_bin(payload, strlen(payload), out, sizeof out, &n),
+  CHECK(run_bin(NULL, payload, strlen(payload), out, sizeof out, &n),
         "%s: exit 0", what);
   CHECK(n == strlen(want) && memcmp(out, want, n) == 0,
         "%s: got \"%.*s\" want \"%s\"", what, (int)n, out, want);
@@ -112,7 +117,7 @@ expect_fallback(const char *payload, size_t len, const char *what)
   char out[8192];
   size_t n = 0;
 
-  CHECK(run_bin(payload, len, out, sizeof out, &n), "%s: exit 0", what);
+  CHECK(run_bin(NULL, payload, len, out, sizeof out, &n), "%s: exit 0", what);
   CHECK(n >= sizeof prefix - 1 && memcmp(out, prefix, sizeof prefix - 1) == 0,
         "%s: fallback line (got %zu bytes)", what, n);
   CHECK(n && out[n - 1] == '\n', "%s: newline-terminated", what);
@@ -195,21 +200,74 @@ test_failure_modes(void)
   expect_fallback(big, sizeof big, "oversized stdin");
 }
 
+// --print-config is what the plugin's configure skill reads as the dialect, so
+// it must be examples/config to the byte, multibyte glyphs included.
+static void
+test_print_config(void)
+{
+  static char want[16 * 1024], got[16 * 1024];
+  FILE *f = fopen(ref_path, "rb");
+  size_t wn = 0, gn = 0;
+
+  CHECK(f && (wn = fread(want, 1, sizeof want, f)) > 0 && feof(f),
+        "reference config read whole");
+
+  if(f) fclose(f);
+
+  CHECK(run_bin("--print-config", "", 0, got, sizeof got, &gn),
+        "--print-config: exit 0");
+  CHECK(gn == wn && memcmp(got, want, wn) == 0,
+        "--print-config: %zu bytes, reference has %zu", gn, wn);
+}
+
+// The reference promises it is the compiled-in defaults, and the skill tells
+// Claude that defaults need no restating. Hold it to that through the binary.
+static void
+test_reference_is_default(void)
+{
+  static const char payload[] =
+    "{\"cwd\":\"/nonexistent/acme/platform\","
+    "\"model\":{\"id\":\"claude-opus-5-5\",\"display_name\":\"Opus\"},"
+    "\"effort\":{\"level\":\"high\"},"
+    "\"context_window\":{\"total_input_tokens\":84213,"
+    "\"context_window_size\":200000},"
+    "\"rate_limits\":{\"five_hour\":{\"used_percentage\":23.5},"
+    "\"seven_day\":{\"used_percentage\":41.0}}}";
+  char dflt[8192], ref[8192];
+  size_t dn = 0, rn = 0;
+  FILE *f = fopen("cli_empty.ini", "w");
+
+  CHECK(f && fclose(f) == 0, "empty config written");
+  CHECK(setenv("DCCSTATUSLINE_CONFIG", "cli_empty.ini", 1) == 0, "env");
+  CHECK(run_bin(NULL, payload, sizeof payload - 1, dflt, sizeof dflt, &dn),
+        "defaults: exit 0");
+  CHECK(setenv("DCCSTATUSLINE_CONFIG", ref_path, 1) == 0, "env");
+  CHECK(run_bin(NULL, payload, sizeof payload - 1, ref, sizeof ref, &rn),
+        "reference: exit 0");
+  CHECK(dn > 0 && dn == rn && memcmp(dflt, ref, dn) == 0,
+        "reference renders as the defaults: \"%.*s\" vs \"%.*s\"",
+        (int)rn, ref, (int)dn, dflt);
+}
+
 int
 main(int argc, char **argv)
 {
-  if(argc != 2)
+  if(argc != 3)
   {
-    fprintf(stderr, "usage: %s <path-to-dccstatusline>\n", argv[0]);
+    fprintf(stderr, "usage: %s <path-to-dccstatusline> <reference-config>\n",
+            argv[0]);
     return(1);
   }
 
   dcc_bin = argv[1];
+  ref_path = argv[2];
   signal(SIGPIPE, SIG_IGN);   // the oversized-stdin case writes into a wall
 
   test_styled();
   test_cwd_shortened();
   test_failure_modes();
+  test_print_config();
+  test_reference_is_default();
 
   return(check_failures ? 1 : 0);
 }

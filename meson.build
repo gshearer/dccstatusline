@@ -65,6 +65,7 @@ if get_option('fuzz')
 endif
 
 buildnum = executable('buildnum', 'tools' / 'buildnum.c', native: true)
+embed = executable('embed', 'tools' / 'embed.c', native: true)
 
 subdir('src')
 subdir('test')

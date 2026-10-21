@@ -8,7 +8,7 @@ endforeach
 
 # End to end: fixture payloads through the real binary.
 test('cli', executable('test_cli', 'test_cli.c'),
-  args: [dccstatusline])
+  args: [dccstatusline, meson.project_source_root() / 'examples' / 'config'])
 
 # libFuzzer harnesses (clang): seed corpora live in test/corpus/.
 if get_option('fuzz')

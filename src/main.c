@@ -14,6 +14,7 @@
 #include "config.h"
 #include "gitinfo.h"
 #include "payload.h"
+#include "reference_config.h"
 #include "sections.h"
 #include "util.h"
 #include "version.h"
@@ -107,6 +108,10 @@ main(int argc, char **argv)
     puts(DCC_BUILD_STRING);
     return(0);
   }
+
+  if(argc > 1 && strcmp(argv[1], "--print-config") == 0)
+    return(write_all((const char *)reference_config,
+                     sizeof reference_config) ? 0 : 1);
 
   signal(SIGPIPE, SIG_IGN);   // a cancelled in-flight refresh must not kill us
 
