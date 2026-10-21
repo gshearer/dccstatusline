@@ -129,3 +129,47 @@ Configuration is read from `$DCCSTATUSLINE_CONFIG`, else
 `$XDG_CONFIG_HOME/dccstatusline/config`, else `~/.config/dccstatusline/config`; with no
 file present, the built-in defaults apply. See `examples/config` (lands with the sections
 chunk) for the commented reference.
+
+## Testing the plugin
+
+The plugin lives in `plugin/`; `.claude-plugin/marketplace.json` at the repo root
+lists it. Its scripts need no Claude session:
+
+```sh
+claude plugin validate .                                 # marketplace and plugin together
+sh plugin/scripts/install.sh /tmp/dcc                    # prints the path and version
+sh plugin/skills/configure/preview.sh /tmp/dcc/dccstatusline
+printf '[git]\nbranch_fg = magenta\n' > /tmp/dcc/draft
+sh plugin/skills/configure/preview.sh /tmp/dcc/dccstatusline /tmp/dcc/draft
+```
+
+`install.sh` always fetches the latest *published* release, so it tests the
+plugin, not your working tree's C code. A value that fails to parse in a draft
+shows up on stderr.
+
+To try the skills, load the plugin from the checkout for one session:
+
+```sh
+claude --plugin-dir ./plugin
+```
+
+Then run `/dccstatusline:setup`. Ask for a change in plain words to exercise
+`configure`, including one it cannot express ("show my battery"), which it
+should decline rather than write. Restart the session to pick up edits to a
+`SKILL.md` or script.
+
+To take the path users take instead, add the checkout as a marketplace:
+
+```
+/plugin marketplace add ./
+/plugin install dccstatusline@dccstatusline
+```
+
+Undo it with `/plugin uninstall dccstatusline@dccstatusline`, then
+`/plugin marketplace remove dccstatusline`, and delete `statusLine` from your
+settings.
+
+`setup` writes `statusLine` into your real settings. To keep them untouched, run
+under a scratch config dir: `CLAUDE_CONFIG_DIR=/tmp/cc-test claude --plugin-dir
+./plugin`, with one `/login` inside. `configure` still edits your real
+dccstatusline config, but backs up the old file to `.bak` first.

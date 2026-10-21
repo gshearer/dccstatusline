@@ -61,7 +61,21 @@ guarantee enforced by construction (single exit path) and hammered by fuzzing.
 
 ## Quick start
 
-No toolchain? Grab a static musl binary (x86_64 or aarch64, no dependencies at
+Inside Claude Code, as a plugin:
+
+```
+/plugin marketplace add gshearer/dccstatusline
+/plugin install dccstatusline@dccstatusline
+/dccstatusline:setup
+```
+
+A plugin cannot set `statusLine` itself. `setup` downloads the release binary
+for your platform into the plugin's data directory, checks its sha256, and
+points `statusLine` at it. Run it again to update. To customize, ask Claude
+for a change in plain words or run `/dccstatusline:configure`: it edits the
+config file described below and previews the line before writing anything.
+
+Or by hand. No toolchain? Grab a static musl binary (x86_64 or aarch64, no dependencies at
 all) — the `latest` URL is stable across releases:
 
 ```sh
