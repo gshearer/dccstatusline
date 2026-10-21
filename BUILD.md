@@ -153,6 +153,11 @@ shows up on stderr. `configure` learns the dialect from `--print-config`, so
 to exercise it against unreleased C changes, copy your own build over the
 installed binary in `~/.claude/plugins/data/dccstatusline-dccstatusline/`.
 
+When editing a `SKILL.md`, remember that Claude Code substitutes every
+`${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` in the file as it loads,
+prose included. A sentence that names one to warn against it arrives naming
+the real path instead.
+
 To try the skills, load the plugin from the checkout for one session:
 
 ```sh

@@ -32,8 +32,8 @@ writes the setting. Re-running it updates the binary in place.
      "statusLine": { "type": "command", "command": "<path from step 1>", "padding": 0 }
      ```
 
-   Use the expanded absolute path, never the literal `${CLAUDE_PLUGIN_DATA}`.
-   Nothing documents that plugin variables expand inside `statusLine`.
+   Write the path exactly as step 1 printed it, never a `$` variable in its
+   place: nothing documents that variables expand inside `statusLine`.
 
 3. Check that nothing overrides it. In the current project,
    `.claude/settings.local.json` and then `.claude/settings.json` win over
