@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Customize dccstatusline, the status line this plugin installs. When dccstatusline is the active status line, use this instead of the built-in status line setup whenever the user wants to change their status line's colors, sections, order, separator, formats, cwd shortening, or reset-time style, or asks what it can show.
+description: Customize dccstatusline, however it was installed. When dccstatusline is the active status line, use this instead of the built-in status line setup whenever the user wants to change their status line's colors, sections, order, separator, formats, cwd shortening, or reset-time style, or asks what it can show.
 ---
 
 # Configure dccstatusline
@@ -10,7 +10,7 @@ survives plugin updates and uninstalls. The reader skips unknown keys and
 sections without a word, and a bad value silently keeps its default. Because
 of that, every change is previewed before it is applied.
 
-## 0. Check that dccstatusline is the active status line
+## 0. Find the active dccstatusline binary
 
 Another tool, such as the built-in `/statusline`, may have pointed
 `statusLine` elsewhere. Then editing this config changes nothing on screen,
@@ -23,28 +23,41 @@ Find the `statusLine` setting that wins. The first file that sets it wins:
 3. `$CLAUDE_CONFIG_DIR/settings.json` if that variable is set, otherwise
    `~/.claude/settings.json`
 
-If its `command` is not `${CLAUDE_PLUGIN_DATA}/dccstatusline`, or nothing sets
-`statusLine`, stop. Tell the user which file sets it and what it runs, and
-offer `/dccstatusline:setup` to switch back. Don't edit the config.
+Take the first word of its `command`. If that word's last path component is
+`dccstatusline`, it is the binary: expand a leading `~`, and resolve a bare
+`dccstatusline` with `command -v`. Call its absolute path `BIN` below. The
+user may have installed it by hand or through this plugin. Either way it is
+the binary to configure.
 
-## 1. Find the binary and the config
+If nothing sets `statusLine`, or its command is something else, stop. Tell the
+user which file sets it and what it runs, and offer `/dccstatusline:setup` to
+switch to dccstatusline. Don't edit the config.
 
-- Binary: `${CLAUDE_PLUGIN_DATA}/dccstatusline`. If it is missing, run
-  `/dccstatusline:setup` first.
-- Config path, first match wins:
-  1. `$DCCSTATUSLINE_CONFIG`
-  2. `$XDG_CONFIG_HOME/dccstatusline/config`
-  3. `~/.config/dccstatusline/config`
+## 1. Find the config
 
-  Read it if it exists. It is fine if it doesn't: every key is optional.
+First match wins:
+
+1. `$DCCSTATUSLINE_CONFIG`
+2. `$XDG_CONFIG_HOME/dccstatusline/config`
+3. `~/.config/dccstatusline/config`
+
+Read it if it exists. It is fine if it doesn't: every key is optional.
 
 ## 2. Learn the dialect
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/configure/config.example`. It is the full
-commented reference: every section, token, key, and color spelling, set to the
-compiled-in defaults. Use only keys it documents. If the user asks for
-something it can't express, such as a section that doesn't exist, say so
-instead of writing a key that would be ignored.
+Run `"BIN" --print-config`. The binary prints its own commented reference:
+every section, token, key, and color spelling, set to the compiled-in
+defaults. Because it comes from the binary that will read the config, it
+documents exactly what that build accepts. Use only keys it documents. If the
+user asks for something it can't express, such as a section that doesn't
+exist, say so instead of writing a key that would be ignored.
+
+If the output is a single dimmed line reading `dccstatusline v… (build #…)`
+rather than a reference, the binary predates `--print-config` (added in
+v0.0.4) and ignored the flag. Stop and offer an
+update: `/dccstatusline:setup` if `BIN` is
+`${CLAUDE_PLUGIN_DATA}/dccstatusline`, otherwise the binary they installed by
+hand.
 
 ## 3. Draft
 
@@ -57,8 +70,8 @@ needs. Don't paste in the whole reference: defaults don't need restating.
 Render the current line and the draft with the same representative payload:
 
 ```sh
-sh "${CLAUDE_PLUGIN_ROOT}/skills/configure/preview.sh" "${CLAUDE_PLUGIN_DATA}/dccstatusline"
-sh "${CLAUDE_PLUGIN_ROOT}/skills/configure/preview.sh" "${CLAUDE_PLUGIN_DATA}/dccstatusline" "${CLAUDE_PLUGIN_DATA}/config.draft"
+sh "${CLAUDE_PLUGIN_ROOT}/skills/configure/preview.sh" "BIN"
+sh "${CLAUDE_PLUGIN_ROOT}/skills/configure/preview.sh" "BIN" "${CLAUDE_PLUGIN_DATA}/config.draft"
 ```
 
 - Any `dccstatusline: config:` line on stderr is a value that failed to

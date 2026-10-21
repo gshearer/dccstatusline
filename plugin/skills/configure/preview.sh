@@ -14,10 +14,14 @@ bin=$1
 
 now=$(date +%s)
 
+# $PWD goes into a JSON string: escape what JSON requires, and drop control
+# characters, which a path almost never holds and JSON would need as \u00XX.
+cwd=$(printf '%s' "$PWD" | tr -d '\000-\037' | sed 's/[\\"]/\\&/g')
+
 "$bin" <<EOF
 {
-  "cwd": "$PWD",
-  "workspace": { "current_dir": "$PWD" },
+  "cwd": "$cwd",
+  "workspace": { "current_dir": "$cwd" },
   "model": { "id": "claude-opus-5-5", "display_name": "Opus" },
   "effort": { "level": "high" },
   "context_window": {

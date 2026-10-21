@@ -100,16 +100,20 @@ jobs:
             ./build-fuzz/test/fuzz_$h -runs=0 test/corpus/$h
           done
 
-  # The plugin carries its own copy of the reference config, because only the
-  # plugin directory reaches the plugin cache. The two copies must not drift.
+  # Plugin updates ride on releases: a version in plugin.json pins what users
+  # are offered, so it must name the release meson.build is about to tag.
   plugin:
     runs-on: ubuntu-24.04
-    name: plugin · reference config
+    name: plugin · version
     steps:
       - uses: actions/checkout@v5
 
-      - name: config copy matches
-        run: cmp examples/config plugin/skills/configure/config.example
+      - name: plugin.json version matches meson.build
+        run: |
+          want=$(sed -n "s/^  version: '\(.*\)',$/\1/p" meson.build)
+          got=$(jq -r .version plugin/.claude-plugin/plugin.json)
+          echo "meson.build $want, plugin.json $got"
+          [ -n "$want" ] && [ "$want" = "$got" ]
 
   # The platform release.yml ships a binary for. Apple clang is the reason the
   # hardening flags are feature-detected at all, so it needs to be seen here.

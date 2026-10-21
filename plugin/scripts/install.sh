@@ -33,6 +33,7 @@ mkdir -p "$dest"
 dest=$(cd "$dest" && pwd)
 tmp="$dest/.dccstatusline.$$"
 trap 'rm -f "$tmp" "$tmp.sha256"' EXIT
+trap 'exit 1' HUP INT TERM   # dash skips the EXIT trap on a fatal signal
 
 curl -fsSL -o "$tmp" "$base/$asset"
 curl -fsSL -o "$tmp.sha256" "$base/$asset.sha256"

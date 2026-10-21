@@ -55,6 +55,9 @@ Alpine containers on every version-tag push and attaches them (with sha256
 sums) to the GitHub release; asset names are unversioned so
 `/releases/latest/download/dccstatusline-<arch>-linux-musl` is a stable URL.
 Backfill an existing tag with `gh workflow run release.yml -f tag=<tag>`.
+A release bumps `version` in `plugin/.claude-plugin/plugin.json` alongside `meson.build`
+— CI fails until the two agree — because that version is what offers plugin users the
+update.
 
 The same workflow also builds a native macOS Apple Silicon binary on a
 `macos-15` runner and attaches it as `dccstatusline-arm64-macos` (macOS has no
@@ -127,8 +130,9 @@ Add to `~/.claude/settings.json`:
 
 Configuration is read from `$DCCSTATUSLINE_CONFIG`, else
 `$XDG_CONFIG_HOME/dccstatusline/config`, else `~/.config/dccstatusline/config`; with no
-file present, the built-in defaults apply. See `examples/config` (lands with the sections
-chunk) for the commented reference.
+file present, the built-in defaults apply. See `examples/config` for the commented
+reference; the binary embeds it at build time and prints it with `--print-config`, and
+`test_cli` holds it to the compiled-in defaults.
 
 ## Testing the plugin
 
@@ -145,7 +149,9 @@ sh plugin/skills/configure/preview.sh /tmp/dcc/dccstatusline /tmp/dcc/draft
 
 `install.sh` always fetches the latest *published* release, so it tests the
 plugin, not your working tree's C code. A value that fails to parse in a draft
-shows up on stderr.
+shows up on stderr. `configure` learns the dialect from `--print-config`, so
+to exercise it against unreleased C changes, copy your own build over the
+installed binary in `~/.claude/plugins/data/dccstatusline-dccstatusline/`.
 
 To try the skills, load the plugin from the checkout for one session:
 

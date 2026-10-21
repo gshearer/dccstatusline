@@ -35,7 +35,15 @@ writes the setting. Re-running it updates the binary in place.
    Use the expanded absolute path, never the literal `${CLAUDE_PLUGIN_DATA}`.
    Nothing documents that plugin variables expand inside `statusLine`.
 
-3. Tell the user:
+3. Check that nothing overrides it. In the current project,
+   `.claude/settings.local.json` and then `.claude/settings.json` win over
+   the user file. If either sets a `statusLine` whose command differs from
+   the path from step 1, the status line in this project will not change.
+   Tell the user which file it is and what it runs, and offer to remove that
+   `statusLine` key from it, keeping every other key exactly as it was. Only
+   edit the file if they agree.
+
+4. Tell the user:
    - The installed version, and that the status line appears on the next
      refresh.
    - The defaults need no config file. To customize colors, sections, or the

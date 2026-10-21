@@ -61,7 +61,10 @@ guarantee enforced by construction (single exit path) and hammered by fuzzing.
 
 ## Quick start
 
-Inside Claude Code, as a plugin:
+Two routes to the same binary: a Claude Code plugin that fetches and wires it
+for you, or by hand.
+
+### As a Claude Code plugin
 
 ```
 /plugin marketplace add gshearer/dccstatusline
@@ -74,8 +77,11 @@ for your platform into the plugin's data directory, checks its sha256, and
 points `statusLine` at it. Run it again to update. To customize, ask Claude
 for a change in plain words or run `/dccstatusline:configure`: it edits the
 config file described below and previews the line before writing anything.
+`configure` works just as well on a binary you installed by hand.
 
-Or by hand. No toolchain? Grab a static musl binary (x86_64 or aarch64, no dependencies at
+### By hand
+
+No toolchain? Grab a static musl binary (x86_64 or aarch64, no dependencies at
 all) — the `latest` URL is stable across releases:
 
 ```sh
@@ -131,7 +137,8 @@ One small INI file at `~/.config/dccstatusline/config` (XDG respected,
 `DCCSTATUSLINE_CONFIG` overrides). Every key optional; parse errors keep that
 key's default rather than breaking your line. The fully commented reference —
 identical to the compiled-in defaults — is
-[`examples/config`](examples/config).
+[`examples/config`](examples/config), and every binary carries its own copy:
+`dccstatusline --print-config`.
 
 ```ini
 [statusline]
@@ -236,3 +243,5 @@ With thanks to everyone whose pull requests have been merged:
 - **dk** ([@kenzik](https://github.com/kenzik)) — macOS release binary
   ([#1](https://github.com/gshearer/dccstatusline/pull/1)), cwd shortening
   ([#3](https://github.com/gshearer/dccstatusline/pull/3))
+- **Michael Vendivel** ([@mven](https://github.com/mven)) — Claude Code plugin
+  ([#5](https://github.com/gshearer/dccstatusline/pull/5))

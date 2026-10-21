@@ -1,10 +1,11 @@
 # dccstatusline — reference configuration
 #
 # This file documents the compiled-in defaults: with no config file present,
-# exactly this is what you get. To customize, copy it into place and edit:
+# exactly this is what you get, and the binary prints it with --print-config.
+# To customize, put a copy in place and edit it:
 #
 #     mkdir -p ~/.config/dccstatusline
-#     cp examples/config ~/.config/dccstatusline/config
+#     dccstatusline --print-config > ~/.config/dccstatusline/config
 #
 # Every key is optional; unknown keys and sections are ignored, and a value
 # that fails to parse keeps its default (with a note on stderr, visible via
