@@ -101,11 +101,14 @@ fuzzing stays a local job.
 
 ## Versioning
 
-The build string is `dccstatusline v<version> (build #N)`. N lives in `build_number.txt`
-at the repo root (gitignored, survives build-dir wipes) and increments on **every ninja
-invocation that builds** — including no-op rebuilds and `meson test` runs. That is the
-accepted semantic: N counts builds, not releases. Reset it by writing a number to the
-file, or delete it to restart at 1. `dccstatusline --version` prints the string.
+The build string is `dccstatusline v<version>`, plus ` (build #N)` in a tree that keeps a
+build counter. The counter is opt-in by presence: N lives in `build_number.txt` at the repo
+root (gitignored, survives build-dir wipes) and increments on **every ninja invocation that
+builds** — including no-op rebuilds and `meson test` runs; N counts builds, not releases.
+Start counting with `echo 0 > build_number.txt`, reset by writing a number, stop by
+deleting it. Release tarballs, CI clones and distro packages have no counter, so they build
+as plain `v<version>`, byte-identical from one build to the next. `dccstatusline --version`
+prints the string.
 
 ## Install
 

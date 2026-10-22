@@ -141,10 +141,13 @@ optimized, unsanitized configs. Release: `-Doptimization=2 -Db_lto=true` (the pr
 syscall-dominated; -O3 buys nothing).
 
 Build number: a native C helper (`tools/buildnum.c`) runs as a `build_always_stale`
-custom target, incrementing `build_number.txt` (source root, gitignored — survives
-build-dir wipes) and generating `version.h` with `DCC_BUILD_STRING "dccstatusline v<version>
-(build #N)"`. N counts ninja invocations that build; only `main.c` includes the header,
-so each bump costs one tiny recompile and a relink.
+custom target and generates `version.h` with `DCC_BUILD_STRING "dccstatusline v<version>"`.
+Where `build_number.txt` exists (source root, gitignored — survives build-dir wipes) it is
+incremented and the string gains ` (build #N)`; N counts ninja invocations that build, and
+only `main.c` includes the header, so each bump costs one tiny recompile and a relink.
+Without the file — release tarballs, CI clones, distro packages — the header is constant
+and rewritten only when its text changes, so builds are reproducible and a second `ninja`
+is a no-op.
 
 ## Testing
 
