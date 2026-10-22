@@ -61,8 +61,8 @@ guarantee enforced by construction (single exit path) and hammered by fuzzing.
 
 ## Quick start
 
-Two routes to the same binary: a Claude Code plugin that fetches and wires it
-for you, or by hand.
+Three routes to the same binary: a Claude Code plugin that fetches and wires
+it for you, a package on Arch Linux, or by hand.
 
 ### As a Claude Code plugin
 
@@ -78,6 +78,19 @@ points `statusLine` at it. Run it again to update. To customize, ask Claude
 for a change in plain words or run `/dccstatusline:configure`: it edits the
 config file described below and previews the line before writing anything.
 `configure` works just as well on a binary you installed by hand.
+
+### Arch Linux
+
+[`dccstatusline`](https://aur.archlinux.org/packages/dccstatusline) is in the
+AUR, built from the release tarball with your distribution's own hardening
+flags and kept current through your usual updates:
+
+```sh
+yay -S dccstatusline    # or any AUR helper
+```
+
+It installs `/usr/bin/dccstatusline`. Point `statusLine` at that path, as
+shown at the end of the next section.
 
 ### By hand
 
