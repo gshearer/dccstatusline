@@ -27,7 +27,7 @@
 # Formats are templates. {tokens} are replaced by live values and styled by
 # their *_fg/*_bg keys; literal text is styled by the section's fg/bg. A
 # token with nothing to show also swallows the literal run before it, so
-# "{name} {ver} ·{effort}" degrades to "Fable 5" — never "Fable 5 ·".
+# "{name} {ver} · {effort}" degrades to "Fable 5" — never "Fable 5 ·".
 # {{ and }} give literal braces. Every section also has a {label} token,
 # filled from its `label` key.
 
@@ -78,7 +78,7 @@ fg     = bright_green
 # {ver} is derived from the model id (claude-fable-5 → "5") and goes empty
 # when {name} already ends with it — "Fable 5", never "Fable 5 5".
 [model]
-format = {name} {ver} ·{effort}
+format = {name} {ver} · {effort}
 fg     = bright_magenta
 effort_fg = bright_black
 

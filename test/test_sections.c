@@ -146,7 +146,7 @@ test_full_line(void)
   plain(&cfg);
   render_plain(&pay, &cfg, &git, out, &n);
   CHECK_MEM(out, n,
-            "~/proj \xe2\x94\x82 main \xe2\x94\x82 Fable 5 \xc2\xb7max \xe2\x94\x82 "
+            "~/proj \xe2\x94\x82 main \xe2\x94\x82 Fable 5 \xc2\xb7 max \xe2\x94\x82 "
             "ctx 16,700/200,000 8% \xe2\x94\x82 5h 24% \xe2\x94\x82 7d 41%");
 }
 
