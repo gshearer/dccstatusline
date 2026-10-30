@@ -257,4 +257,5 @@ With thanks to everyone whose pull requests have been merged:
   ([#1](https://github.com/gshearer/dccstatusline/pull/1)), cwd shortening
   ([#3](https://github.com/gshearer/dccstatusline/pull/3))
 - **Michael Vendivel** ([@mven](https://github.com/mven)) — Claude Code plugin
-  ([#5](https://github.com/gshearer/dccstatusline/pull/5))
+  ([#5](https://github.com/gshearer/dccstatusline/pull/5)), spaced effort dot
+  ([#6](https://github.com/gshearer/dccstatusline/pull/6))
