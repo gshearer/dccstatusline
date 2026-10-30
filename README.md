@@ -28,7 +28,7 @@ zero forks, zero heap allocations, one write, exit 0.
 - 🌿 **git branch** — read straight from `.git/HEAD` (worktrees and submodules
   included), never by spawning `git`; detached HEAD shows the short SHA
 - 🤖 **model** — name, version derived from the model id, and effort level
-  (`Fable 5 ·max`)
+  (`Fable 5 · max`)
 - 🧠 **context** — tokens used, ceiling, and percentage, with digit grouping
 - ⏳ **plan usage** — both rate-limit windows (5-hour and 7-day today),
   counting down to the reset (`↻04:12`) or showing its local time in 24- or
@@ -38,7 +38,7 @@ zero forks, zero heap allocations, one write, exit 0.
   foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
 - 🧩 **format templates** — reorder and repunctuate each section freely;
   a token with nothing to show swallows the punctuation before it, so
-  `{name} {ver} ·{effort}` degrades to `Fable 5`, never to `Fable 5 ·`
+  `{name} {ver} · {effort}` degrades to `Fable 5`, never to `Fable 5 ·`
 - 🪶 **works with no config at all** — the defaults are the screenshot above
 
 ## Measured, not promised

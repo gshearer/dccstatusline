@@ -64,7 +64,7 @@ config_defaults(config_t *cfg)
   sc->fg = named16(10);             // bright_green
 
   sc = &cfg->sec[SEC_MODEL];
-  sc->format = sv_from_cstr("{name} {ver} \xc2\xb7{effort}");
+  sc->format = sv_from_cstr("{name} {ver} \xc2\xb7 {effort}");
   sc->fg = named16(13);             // bright_magenta
   set_tok_fg(cfg, SEC_MODEL, "effort", dim);
 

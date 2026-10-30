@@ -69,7 +69,7 @@ Each section renders a `format` template. Tokens:
 Template semantics:
 
 - **Swallow rule**: a token that renders empty also consumes the literal run immediately
-  before it. `"{name} {ver} ·{effort}"` without effort → `Fable 5`; `"{used}/{ceiling}"`
+  before it. `"{name} {ver} · {effort}"` without effort → `Fable 5`; `"{used}/{ceiling}"`
   without a ceiling drops the `/`. One rule, every dangling-punctuation case.
 - `{{` and `}}` are literal braces; an unclosed `{` renders literally; an unknown token
   renders empty (and swallows). An empty render makes the section vanish, separator
