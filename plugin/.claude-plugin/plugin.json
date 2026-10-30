@@ -1,6 +1,6 @@
 {
   "name": "dccstatusline",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Pure-C Claude Code status line: zero dependencies, ~250 µs per refresh. Run /dccstatusline:setup after installing.",
   "author": { "name": "George Shearer" },
   "homepage": "https://github.com/gshearer/dccstatusline",
