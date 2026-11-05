@@ -18,7 +18,7 @@ typedef enum
   SEC_COUNT,
 } section_id_t;
 
-#define DCC_MAX_TOKENS 5
+#define DCC_MAX_TOKENS 7
 
 typedef struct
 {
@@ -30,7 +30,7 @@ static const section_desc_t dcc_sections[SEC_COUNT] =
 {
   [SEC_CWD]        = { "cwd",        { "label", "path", NULL } },
   [SEC_GIT]        = { "git",        { "label", "branch", NULL } },
-  [SEC_MODEL]      = { "model",      { "label", "name", "ver", "effort", "id", NULL } },
+  [SEC_MODEL]      = { "model",      { "label", "name", "ver", "effort", "id", "model_tag", "effort_plain", NULL } },
   [SEC_CONTEXT]    = { "context",    { "label", "used", "ceiling", "pct", NULL } },
   [SEC_PLAN_SHORT] = { "plan_short", { "label", "window", "pct", "resets", NULL } },
   [SEC_PLAN_LONG]  = { "plan_long",  { "label", "window", "pct", "resets", NULL } },

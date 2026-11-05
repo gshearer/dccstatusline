@@ -34,8 +34,19 @@ zero forks, zero heap allocations, one write, exit 0.
   counting down to the reset (`↻04:12`) or showing its local time in 24- or
   12-hour form; the sections are window-agnostic, so if the windows ever
   change, your config doesn't
+- 🎚️ **profiles** — one key decides the whole line, replacing the section
+  list and every format: `profile = basic` trims it to the figures
+  (`Opus 5.5 · high │ ctx 43% │ 5h 24%`), and `detailed` adds the token counts
+  and the reset times; `glyphs = on` adds the `⎇`, and under `detailed` the
+  `↻`, and `glyphs = nerdfont` draws their Nerd Font equivalents and the model
+  as a filled pill; with no profile, the sections and formats are your config's
 - 🎨 **per-element color** — every token of every section takes its own
   foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
+- 🌈 **themes** — `theme = nord`, or `--theme nord` on the command line,
+  restyles the whole line: catppuccin, nord, gruvbox, tokyonight, dracula,
+  onedark, rosepine, kanagawa, or solarized; `dccstatusline --themes` prints
+  them side by side, and `/dccstatusline:theme`, a Claude Code mod, picks one
+  from a live preview
 - 🧩 **format templates** — reorder and repunctuate each section freely;
   a token with nothing to show swallows the punctuation before it, so
   `{name} {ver} · {effort}` degrades to `Fable 5`, never to `Fable 5 ·`
@@ -78,6 +89,9 @@ points `statusLine` at it. Run it again to update. To customize, ask Claude
 for a change in plain words or run `/dccstatusline:configure`: it edits the
 config file described below and previews the line before writing anything.
 `configure` works just as well on a binary you installed by hand.
+`/dccstatusline:theme` picks a preset, a separator, a profile and glyphs from
+a live preview. That picker is a Claude Code mod, a panel the plugin adds to the
+harness itself, so it can show the line in color while you choose.
 
 ### Arch Linux
 
@@ -181,12 +195,110 @@ max_len = 28                       # and never longer than 28 characters
 |---|---|
 | `cwd` | `{path}` — plus `style = abbrev \| full \| basename \| shrink \| repo`, `depth = N`, `max_len = N` |
 | `git` | `{branch}` |
-| `model` | `{name}` `{ver}` `{effort}` `{id}` |
+| `model` | `{name}` `{ver}` `{effort}` `{effort_plain}` `{model_tag}` `{id}` |
 | `context` | `{used}` `{ceiling}` `{pct}` |
 | `plan_short` / `plan_long` | `{window}` `{pct}` `{resets}` — plus `resets = countdown \| clock \| clock12` |
 
 Every section also has `{label}`, filled from its `label =` key, and takes
 `fg`/`bg` for its literal text plus `<token>_fg` / `<token>_bg` per token.
+
+`{model_tag}` is `{name} {ver}` as one filled pill, in `model_tag_fg` on
+`model_tag_bg`. It draws its own rounded ends, U+E0B6 and U+E0B4, which need a
+Nerd Font and take `model_tag_bg`. `{effort_plain}` is `{effort}` with no color
+of its own, so it takes the section's `fg`.
+
+### Themes
+
+Ten presets ship in the binary — `default`, `catppuccin` (Mocha), `nord`,
+`gruvbox` (dark), `tokyonight`, `dracula`, `onedark` (Atom One Dark),
+`rosepine`, `kanagawa` (Wave), and `solarized` (dark). Each named preset uses
+two of its theme's colors and one gray: one for the directory and branch,
+one for the model and the usage figures, and the gray for the rest. The model
+pill under `glyphs = nerdfont` fills with the second color and writes on the
+theme's background. A preset
+sets colors only: each keeps the default `│` separator and glyphs, and never
+changes which sections show or how the cwd is shortened. Pick one with a
+single key:
+
+```ini
+[statusline]
+theme = nord
+
+[cwd]
+fg = red                           # keys after the theme line win over it
+```
+
+The preset applies where its line sits, so keep it first, and tweak it with
+keys below. A config copied whole from `--print-config` restates every color
+and paints over any theme, so delete the color keys you didn't change.
+`dccstatusline --themes` prints every preset side by side, and
+`--themes "<ini>"` lays INI keys over each one first. It has to be the first
+argument and the flags below don't reach it, so a profile or glyphs go in the
+INI.
+
+<img src="assets/themes.png" alt="dccstatusline --themes printing all ten presets, one per line" width="860">
+
+With the plugin, `/dccstatusline:theme` opens a picker. The picker is a Claude
+Code mod: `plugin/hooks/register.tsx` adds it to the harness itself as a
+panel, because Claude Code hides the status line while a menu is open and
+prints color codes raw inside one. The panel is a preview box over a row each
+for the theme, separator, profile and glyphs, starting at what your config
+sets. Enter moves a row to its next value and redraws the preview, and Enter on
+the Apply button switches your status line to them. The separator row includes
+a thin arrow, U+E0B1, that needs a Nerd Font. The profile row picks none, which
+writes no `profile` key, basic or detailed. The glyphs row is the profile's
+`glyphs` key, off, on or nerdfont; with no profile it is dimmed and does
+nothing. The presets use `#rrggbb` colors, so they look right only in a
+truecolor terminal. Where Claude Code doesn't load the mod, or the panel can't
+open, `/dccstatusline:theme` shows the `--themes` printout and asks with a menu
+instead.
+
+<img src="assets/picker.gif" alt="the /dccstatusline:theme picker in Claude Code: cycling the theme, separator, profile and glyphs rows while the preview redraws, then pressing Apply and the status line switching to nord" width="860">
+
+### Profiles and flags
+
+A profile is a whole line decided for you. Set, it replaces `sections` and
+every section's `format`, wherever those keys sit in the config, and leaves
+the colors, labels, separator, digit grouping, cwd shortening and reset styles
+to the config. Both draw all six sections, and neither draws a glyph until
+`[statusline] glyphs = on` puts the `⎇` before the branch and the `↻` before
+any reset time:
+
+- `profile = basic` — `~/src/acme │ main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`
+- with `glyphs = on` — `~/src/acme │ ⎇ main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`
+- `profile = detailed` — `~/src/acme │ main │ Opus 5.5 · high │ ctx 87,333/200,000 43% │ 5h 24% 02:30 │ 7d 41% 03:12:00`
+- with `glyphs = on` — `~/src/acme │ ⎇ main │ Opus 5.5 · high │ ctx 87,333/200,000 43% │ 5h 24% ↻02:30 │ 7d 41% ↻03:12:00`
+- with `glyphs = nerdfont` — the same line, with U+E0A0 for the `⎇`, U+F021 and a space for the `↻`, the model as a filled pill with rounded ends, U+E0B6 and U+E0B4, and the effort beside it in the model's color with no `·`
+
+`glyphs = nerdfont` needs a Nerd Font in your terminal, under either profile.
+Its glyphs are private-use code points, so without one they draw as empty
+boxes. The plugin's picker shows you that before anything is written, and
+`--themes` does the same by hand:
+
+```sh
+dccstatusline --themes '[statusline]
+profile = detailed
+glyphs = nerdfont'
+```
+
+With no profile, which is the default, the line is the one in the screenshot,
+or whatever your `sections` and `format` keys make of it. The `glyphs` key
+does nothing there: the glyphs are the formats' own, so a Nerd Font glyph goes
+in the `format` itself.
+
+`--theme <name>`, `--profile <name>` and `--glyphs on|off|nerdfont` stand in for those
+three keys on the command line, so a project's own settings can restyle the
+line without a config of its own:
+
+```json
+"statusLine": { "type": "command", "command": "dccstatusline --theme nord --profile basic --glyphs on" }
+```
+
+A flag wins over its key. `--theme nord` acts as if `theme = nord` were the
+config's first line: the config's own `theme` key is skipped, and its color
+keys still apply on top. `--profile` beats `profile =`, and `--glyphs` beats
+`glyphs =`. An unknown value gets one note on stderr and the config's key
+stands; the line still draws.
 
 ### Keeping the cwd short
 

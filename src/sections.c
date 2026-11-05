@@ -176,6 +176,25 @@ name_carries_ver(sv_t name, sv_t ver)
   return(name.n == ver.n || name.p[name.n - ver.n - 1] == ' ');
 }
 
+// {model_tag} is one fill, where a literal space between {name} and {ver} would
+// punch a hole, so it holds them joined. A name too long to join stays whole,
+// without the version.
+static sv_t
+join_model(char *dst, size_t cap, sv_t name, sv_t ver)
+{
+  sv_t out = name;
+
+  if(!ver.n || name.n + 1 + ver.n > cap) return(out);
+
+  memcpy(dst, name.p, name.n);
+  dst[name.n] = ' ';
+  memcpy(dst + name.n + 1, ver.p, ver.n);
+  out.p = dst;
+  out.n = name.n + 1 + ver.n;
+
+  return(out);
+}
+
 // The repository root plus everything below it: the root's own directory name
 // is the first component, so the path still says which project this is.
 static sv_t
@@ -268,7 +287,7 @@ sec_git(sbuf_t *sb, const config_t *cfg, const gitinfo_t *git)
 static void
 sec_model(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
 {
-  char verbuf[16];
+  char verbuf[16], tagbuf[64];
   tokset_t ts = { .n = 0 };
   sv_t name = pay->model_name;
   sv_t ver;
@@ -286,6 +305,10 @@ sec_model(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
   add_tok(&ts, SEC_MODEL, cfg, "ver", ver);
   add_tok(&ts, SEC_MODEL, cfg, "effort", pay->effort);
   add_tok(&ts, SEC_MODEL, cfg, "id", pay->model_id);
+  add_tok(&ts, SEC_MODEL, cfg, "model_tag",
+          join_model(tagbuf, sizeof tagbuf, name, ver));
+  ts.toks[ts.n - 1].pill = true;
+  add_tok(&ts, SEC_MODEL, cfg, "effort_plain", pay->effort);
   run_fmt(sb, SEC_MODEL, cfg, &ts);
 }
 

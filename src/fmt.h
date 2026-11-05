@@ -11,6 +11,7 @@ typedef struct
   const char *name;   // template spelling, e.g. "used" for {used}
   sv_t value;         // n == 0 means absent — see the swallow rule below
   color_t fg, bg;     // COLOR_NONE inherits the section base style
+  bool pill;          // draws rounded caps around the value, in its bg
 } fmt_token_t;
 
 // Renders a template ("{used}/{ceiling} {pct}") into sb. Literal runs carry
@@ -24,6 +25,7 @@ void fmt_render(sbuf_t *, sv_t, const fmt_token_t *, size_t, color_t, color_t);
 #ifdef FMT_INTERNAL
 static const fmt_token_t *token_find(sv_t, const fmt_token_t *, size_t);
 static void emit_literal(sbuf_t *, sv_t, size_t, size_t, color_t, color_t);
+static void emit_cap(sbuf_t *, const char *, color_t, color_t);
 #endif
 
 #endif

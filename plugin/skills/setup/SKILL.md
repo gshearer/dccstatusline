@@ -22,8 +22,9 @@ writes the setting. Re-running it updates the binary in place.
 2. Read the user settings file: `$CLAUDE_CONFIG_DIR/settings.json` if that
    variable is set, otherwise `~/.claude/settings.json`. If the file does not
    exist, treat it as `{}`.
-   - If `statusLine.command` already equals the path from step 1, leave the
-     file alone. The update is done.
+   - If the first word of `statusLine.command` already equals the path from
+     step 1, leave the file alone. The update is done. Any `--theme`,
+     `--profile` or `--glyphs` after it stays as the user set it.
    - If a different `statusLine` is set, show it to the user and ask before
      replacing it.
    - Otherwise set the following, keeping every other key exactly as it was:
@@ -37,9 +38,9 @@ writes the setting. Re-running it updates the binary in place.
 
 3. Check that nothing overrides it. In the current project,
    `.claude/settings.local.json` and then `.claude/settings.json` win over
-   the user file. If either sets a `statusLine` whose command differs from
-   the path from step 1, the status line in this project will not change.
-   Tell the user which file it is and what it runs, and offer to remove that
+   the user file. If either sets a `statusLine` whose command's first word
+   differs from the path from step 1, the status line in this project will
+   not change. Tell the user which file it is and what it runs, and offer to remove that
    `statusLine` key from it, keeping every other key exactly as it was. Only
    edit the file if they agree.
 
@@ -49,6 +50,8 @@ writes the setting. Re-running it updates the binary in place.
    - The defaults need no config file. To customize colors, sections, or the
      cwd, they can ask for a change in plain words or run
      `/dccstatusline:configure`.
+   - To see the preset themes in color and pick one, along with a separator,
+     a profile and glyphs, they can run `/dccstatusline:theme`.
    - Running `/dccstatusline:setup` again updates the binary.
    - Uninstalling the plugin deletes the binary, so they should then remove
      `statusLine` from that settings file.

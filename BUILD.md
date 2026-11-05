@@ -144,6 +144,7 @@ lists it. Its scripts need no Claude session:
 
 ```sh
 claude plugin validate .                                 # marketplace and plugin together
+claude plugin test plugin                                # the picker's tests, plugin/tests/
 sh plugin/scripts/install.sh /tmp/dcc                    # prints the path and version
 sh plugin/skills/configure/preview.sh /tmp/dcc/dccstatusline
 printf '[git]\nbranch_fg = magenta\n' > /tmp/dcc/draft
@@ -152,9 +153,10 @@ sh plugin/skills/configure/preview.sh /tmp/dcc/dccstatusline /tmp/dcc/draft
 
 `install.sh` always fetches the latest *published* release, so it tests the
 plugin, not your working tree's C code. A value that fails to parse in a draft
-shows up on stderr. `configure` learns the dialect from `--print-config`, so
-to exercise it against unreleased C changes, copy your own build over the
-installed binary in `~/.claude/plugins/data/dccstatusline-dccstatusline/`.
+shows up on stderr. `configure` learns the dialect from `--print-config`, and
+`theme` and its picker draw from `--themes`, so to exercise them against
+unreleased C changes, copy your own build over the installed binary in
+`~/.claude/plugins/data/dccstatusline-dccstatusline/`.
 
 When editing a `SKILL.md`, remember that Claude Code substitutes every
 `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` in the file as it loads,
@@ -169,7 +171,10 @@ claude --plugin-dir ./plugin
 
 Then run `/dccstatusline:setup`. Ask for a change in plain words to exercise
 `configure`, including one it cannot express ("show my battery"), which it
-should decline rather than write. Restart the session to pick up edits to a
+should decline rather than write. Run `/dccstatusline:theme` on its own to
+exercise the picker: with a profile chosen, step the glyphs row to `nerdfont`,
+and the preview draws the glyphs, or empty boxes without a Nerd Font. Restart
+the session to pick up edits to a
 `SKILL.md` or script.
 
 To take the path users take instead, add the checkout as a marketplace:

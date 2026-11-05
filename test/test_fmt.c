@@ -14,6 +14,7 @@ static void test_swallow(void);
 static void test_escapes(void);
 static void test_styles(void);
 static void test_truncation(void);
+static void test_pill(void);
 
 static void
 try_plain(const char *tpl, const fmt_token_t *toks, size_t n, const char *want)
@@ -31,18 +32,18 @@ test_swallow(void)
 {
   const fmt_token_t one[] =
   {
-    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
   const fmt_token_t pair[] =
   {
-    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
-    { "b", { NULL, 0 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
+    { "b", { NULL, 0 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
   const fmt_token_t ctx[] =
   {
-    { "u", { "U", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
-    { "c", { "C", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
-    { "p", { NULL, 0 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "u", { "U", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
+    { "c", { "C", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
+    { "p", { NULL, 0 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
 
   try_plain("hi", NULL, 0, "\x1b[0mhi");
@@ -69,11 +70,11 @@ test_styles(void)
 {
   const fmt_token_t styled[] =
   {
-    { "a", { "A", 1 }, { COLOR_NAMED16, 6, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "a", { "A", 1 }, { COLOR_NAMED16, 6, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
   const fmt_token_t plain[] =
   {
-    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "a", { "A", 1 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
   char mem[256];
   sbuf_t sb;
@@ -92,7 +93,7 @@ test_truncation(void)
 {
   const fmt_token_t one[] =
   {
-    { "a", { "AAAAA", 5 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 } },
+    { "a", { "AAAAA", 5 }, { COLOR_NONE, 0, 0, 0 }, { COLOR_NONE, 0, 0, 0 }, false },
   };
   char mem[8];
   sbuf_t sb;
@@ -101,6 +102,39 @@ test_truncation(void)
   fmt_render(&sb, sv_from_cstr("{a}"), one, 1, none, none);
   CHECK(sb.truncated, "tiny buffer flags truncation");
   CHECK(sb.len <= sizeof mem, "never overflows");
+}
+
+// The caps wear the fill over the base bg, and survive a swallow after the pill.
+static void
+test_pill(void)
+{
+  const fmt_token_t toks[] =
+  {
+    { "p", { "P", 1 }, red, cyan, true },
+    { "e", { NULL, 0 }, red, cyan, true },
+    { "b", { NULL, 0 }, none, none, false },
+  };
+  char mem[256];
+  sbuf_t sb;
+
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  fmt_render(&sb, sv_from_cstr("{p}"), toks, 3, none, none);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;36m\xee\x82\xb6\x1b[0;31;46mP\x1b[0;36m\xee\x82\xb4");
+
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  fmt_render(&sb, sv_from_cstr("{p}"), toks, 3, none, red);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;36;41m\xee\x82\xb6\x1b[0;31;46mP\x1b[0;36;41m\xee\x82\xb4");
+
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  fmt_render(&sb, sv_from_cstr("{p} {b}"), toks, 3, none, none);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;36m\xee\x82\xb6\x1b[0;31;46mP\x1b[0;36m\xee\x82\xb4");
+
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  fmt_render(&sb, sv_from_cstr("{e}"), toks, 3, none, none);
+  CHECK(sb.len == 0, "an empty pill draws no caps");
 }
 
 int
@@ -112,6 +146,7 @@ main(void)
   test_escapes();
   test_styles();
   test_truncation();
+  test_pill();
 
   return(check_failures ? 1 : 0);
 }

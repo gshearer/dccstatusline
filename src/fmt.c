@@ -42,6 +42,16 @@ emit_literal(sbuf_t *sb, sv_t tpl, size_t from, size_t to, color_t fg, color_t b
   sbuf_append(sb, tpl.p + chunk, i - chunk);
 }
 
+// A pill's rounded end, part of the token and not a literal in the template, so
+// the swallow rule can't take it with a missing token after the pill. It wears
+// the fill as text, over whatever surrounds the pill.
+static void
+emit_cap(sbuf_t *sb, const char *cap, color_t fill, color_t base_bg)
+{
+  color_sgr(sb, fill, base_bg);
+  sbuf_append_sv(sb, sv_from_cstr(cap));
+}
+
 void
 fmt_render(sbuf_t *sb, sv_t tpl, const fmt_token_t *tokens, size_t ntokens,
            color_t base_fg, color_t base_bg)
@@ -73,11 +83,17 @@ fmt_render(sbuf_t *sb, sv_t tpl, const fmt_token_t *tokens, size_t ntokens,
 
         if(t && t->value.n)
         {
+          color_t fg = t->fg.kind != COLOR_NONE ? t->fg : base_fg;
+          color_t bg = t->bg.kind != COLOR_NONE ? t->bg : base_bg;
+
           emit_literal(sb, tpl, lit, i, base_fg, base_bg);
-          color_sgr(sb,
-                    t->fg.kind != COLOR_NONE ? t->fg : base_fg,
-                    t->bg.kind != COLOR_NONE ? t->bg : base_bg);
+
+          if(t->pill) emit_cap(sb, "\xee\x82\xb6", bg, base_bg);   // U+E0B6
+
+          color_sgr(sb, fg, bg);
           sbuf_append_sv(sb, t->value);
+
+          if(t->pill) emit_cap(sb, "\xee\x82\xb4", bg, base_bg);   // U+E0B4
         }
 
         i = close + 1;
