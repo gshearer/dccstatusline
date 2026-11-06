@@ -89,7 +89,7 @@ the user. It replaces `[statusline] sections` and every `format`, wherever
 those keys sit, and leaves the colors, labels, separator, `thousands`, cwd
 shortening and reset styles to the config. Both profiles draw all six
 sections: basic trims them to the figures
-(`main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`), and detailed adds the
+(`~/src/acme │ main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`), and detailed adds the
 token counts and the reset times. Neither draws a glyph until
 `[statusline] glyphs = on` turns them on: `⎇` before the branch and, under
 detailed, `↻` before both reset times. `glyphs = nerdfont` draws U+E0A0 and

@@ -469,6 +469,9 @@ test_model_tag(void)
   char bare[] =
     "[statusline]\nsections = model\n"
     "[model]\nformat = {model_tag}\n";
+  char refg[] =
+    "[statusline]\nsections = model\n"
+    "[model]\nformat = {model_tag}\nfg = cyan\n";
   char big[64];
   char want[128];
   char out[1024];
@@ -499,6 +502,14 @@ test_model_tag(void)
   statusline_render(&sb, &pay, &cfg, &nogit, TEST_NOW);
   CHECK_MEM(sb.p, sb.len,
             "\x1b[0;96m\xee\x82\xb6\x1b[0;30;106mFable 5\x1b[0;96m\xee\x82\xb4");
+
+  // With no fill of its own, the pill follows the section's fg.
+  config_defaults(&cfg);
+  config_load(&cfg, refg, sizeof refg - 1);
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  statusline_render(&sb, &pay, &cfg, &nogit, TEST_NOW);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;36m\xee\x82\xb6\x1b[0;30;46mFable 5\x1b[0;36m\xee\x82\xb4");
 
   // A name that already ends with its version isn't doubled.
   config_defaults(&cfg);

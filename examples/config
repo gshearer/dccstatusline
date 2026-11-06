@@ -42,16 +42,19 @@ theme = default
 # basic | detailed, unset by default. A profile is a whole line decided for
 # you: it replaces `sections` and every `format` below, wherever they sit,
 # and leaves the colors and everything else to this file. Both draw all six
-# sections; basic trims them to the figures, detailed adds counts and
-# resets:
-#     basic      main │ ctx 43% │ 5h 24%
-#     detailed   main │ ctx 87,333/200,000 43% │ 5h 24% 04:12
+# sections; basic trims them to the figures, detailed adds the token
+# counts and the reset times:
+#   basic
+#     ~/src/acme │ main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%
+#   detailed, the same up to the model, then
+#     ctx 87,333/200,000 43% │ 5h 24% 02:30 │ 7d 41% 03:12:00
 # Neither draws a glyph until `glyphs = on`: ⎇ before the branch, and
 # under detailed ↻ before the reset times. `glyphs = nerdfont` draws U+E0A0
-# and U+F021 in their place, draws the model as a filled pill between the rounded
-# caps U+E0B6 and U+E0B4, and drops the dot before the effort. Those take a Nerd
-# Font and are empty boxes without one. Without a profile the glyphs key does
-# nothing, since the glyphs are the formats' own. On the command line, `--theme <name>`, `--profile <name>` and
+# and U+F021 in their place, draws the model as a filled pill between the
+# rounded caps U+E0B6 and U+E0B4, and drops the dot before the effort.
+# Those take a Nerd Font and are empty boxes without one. Without a
+# profile the glyphs key does nothing, since the glyphs are the formats'
+# own. On the command line, `--theme <name>`, `--profile <name>` and
 # `--glyphs on|off|nerdfont` stand in for these three keys:
 # dccstatusline --theme nord --profile basic --glyphs on
 # profile = basic
@@ -101,15 +104,16 @@ fg     = bright_green
 # Tokens: {label} {name} {ver} {effort} {effort_plain} {model_tag} {id}
 # {ver} is derived from the model id (claude-fable-5 → "5") and goes empty
 # when {name} already ends with it — "Fable 5", never "Fable 5 5".
-# {model_tag} is {name} {ver} as one filled pill, with rounded caps that need a
-# Nerd Font and take its bg. {effort_plain} is {effort} with no color of its own,
-# so it takes the section's fg.
+# {model_tag} is {name} {ver} as one filled pill, with rounded caps that
+# need a Nerd Font. It fills with model_tag_bg, or with the section's fg
+# while that is unset, so recoloring the model recolors the pill.
+# {effort_plain} is {effort} with no color of its own, so it takes the
+# section's fg.
 [model]
 format = {name} {ver} · {effort}
 fg     = bright_magenta
 effort_fg = bright_black
 model_tag_fg = black
-model_tag_bg = bright_magenta
 
 # ── context ────────────────────────────────────────────────────────────
 # Tokens: {label} {used} {ceiling} {pct}

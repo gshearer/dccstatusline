@@ -114,6 +114,7 @@ test_pill(void)
     { "e", { NULL, 0 }, red, cyan, true },
     { "b", { NULL, 0 }, none, none, false },
   };
+  const fmt_token_t unfilled[] = { { "u", { "U", 1 }, red, none, true } };
   char mem[256];
   sbuf_t sb;
 
@@ -135,6 +136,12 @@ test_pill(void)
   sbuf_init(&sb, mem, sizeof mem, 0);
   fmt_render(&sb, sv_from_cstr("{e}"), toks, 3, none, none);
   CHECK(sb.len == 0, "an empty pill draws no caps");
+
+  // With no bg of its own, the pill fills with the base fg.
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  fmt_render(&sb, sv_from_cstr("{u}"), unfilled, 1, cyan, none);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;36m\xee\x82\xb6\x1b[0;31;46mU\x1b[0;36m\xee\x82\xb4");
 }
 
 int

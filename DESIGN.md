@@ -101,7 +101,8 @@ profile's, off by default), `sections` (order list), `separator` (+ `separator_f
 Themes are compiled-in INI text, colors only, kept in a table beside the
 defaults. Each named preset is two colors of its palette and a gray: the first for where
 you are (cwd and branch), the second for the model and every usage figure, the gray for
-the separator and all literals. `{model_tag}` fills with the second and writes on the
+the separator and all literals. `{model_tag}` fills with the second, which it inherits from
+the model's `fg` (an unset pill `bg` falls back to the section's `fg`), and writes on the
 palette's background. `theme = name` feeds that text through the same loader at
 the line where it sits, so keys after it override the preset and keys before it are
 overridden. The loader

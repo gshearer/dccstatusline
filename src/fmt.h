@@ -11,7 +11,8 @@ typedef struct
   const char *name;   // template spelling, e.g. "used" for {used}
   sv_t value;         // n == 0 means absent — see the swallow rule below
   color_t fg, bg;     // COLOR_NONE inherits the section base style
-  bool pill;          // draws rounded caps around the value, in its bg
+  bool pill;          // rounded caps around the value; an unset bg fills with
+                      // the base fg, so the pill follows the section's color
 } fmt_token_t;
 
 // Renders a template ("{used}/{ceiling} {pct}") into sb. Literal runs carry

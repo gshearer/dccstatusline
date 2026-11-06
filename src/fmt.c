@@ -83,8 +83,9 @@ fmt_render(sbuf_t *sb, sv_t tpl, const fmt_token_t *tokens, size_t ntokens,
 
         if(t && t->value.n)
         {
-          color_t fg = t->fg.kind != COLOR_NONE ? t->fg : base_fg;
-          color_t bg = t->bg.kind != COLOR_NONE ? t->bg : base_bg;
+          const color_t fg = t->fg.kind != COLOR_NONE ? t->fg : base_fg;
+          const color_t bg = t->bg.kind != COLOR_NONE ? t->bg
+                             : t->pill ? base_fg : base_bg;
 
           emit_literal(sb, tpl, lit, i, base_fg, base_bg);
 

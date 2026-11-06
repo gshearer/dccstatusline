@@ -25,7 +25,8 @@ typedef struct
 } tokset_t;
 
 static int tok_index(const section_desc_t *, const char *);
-static void add_tok(tokset_t *, section_id_t, const config_t *, const char *, sv_t);
+static fmt_token_t *add_tok(tokset_t *, section_id_t, const config_t *, const char *,
+                            sv_t);
 static void run_fmt(sbuf_t *, section_id_t, const config_t *, const tokset_t *);
 static sv_t fmt_pct(char *, size_t, uint32_t);
 static sv_t fmt_clock(char *, size_t, int64_t, bool, bool);

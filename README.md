@@ -36,10 +36,11 @@ zero forks, zero heap allocations, one write, exit 0.
   change, your config doesn't
 - 🎚️ **profiles** — one key decides the whole line, replacing the section
   list and every format: `profile = basic` trims it to the figures
-  (`Opus 5.5 · high │ ctx 43% │ 5h 24%`), and `detailed` adds the token counts
-  and the reset times; `glyphs = on` adds the `⎇`, and under `detailed` the
-  `↻`, and `glyphs = nerdfont` draws their Nerd Font equivalents and the model
-  as a filled pill; with no profile, the sections and formats are your config's
+  (`~/src/acme │ main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`), and
+  `detailed` adds the token counts and the reset times; `glyphs = on` adds the
+  `⎇`, and under `detailed` the `↻`, and `glyphs = nerdfont` draws their Nerd
+  Font equivalents and the model as a filled pill; with no profile, the
+  sections and formats are your config's
 - 🎨 **per-element color** — every token of every section takes its own
   foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
 - 🌈 **themes** — `theme = nord`, or `--theme nord` on the command line,
@@ -203,9 +204,10 @@ Every section also has `{label}`, filled from its `label =` key, and takes
 `fg`/`bg` for its literal text plus `<token>_fg` / `<token>_bg` per token.
 
 `{model_tag}` is `{name} {ver}` as one filled pill, in `model_tag_fg` on
-`model_tag_bg`. It draws its own rounded ends, U+E0B6 and U+E0B4, which need a
-Nerd Font and take `model_tag_bg`. `{effort_plain}` is `{effort}` with no color
-of its own, so it takes the section's `fg`.
+`model_tag_bg`, or on the section's `fg` while `model_tag_bg` is unset, so
+recoloring the model recolors the pill. It draws its own rounded ends, U+E0B6
+and U+E0B4, in the fill's color; they need a Nerd Font. `{effort_plain}` is
+`{effort}` with no color of its own, so it takes the section's `fg`.
 
 ### Themes
 

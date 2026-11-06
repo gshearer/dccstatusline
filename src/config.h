@@ -116,8 +116,8 @@ typedef struct
 // Each preset paints the line in two colors of its palette and one gray: the
 // first for where you are (cwd and branch), the second for the model and every
 // usage figure, and the gray for the separator and all literals. {model_tag}
-// fills with the second color and writes on the palette's background, the one
-// dark text on the line.
+// sets no fill, so it fills with the second color as the model's fg, and
+// writes on the palette's background, the one dark text on the line.
 // Never the separator, a format, the profile, sections, cwd shortening, or
 // resets — a theme recolors the line, it does not rewrite or rearrange it.
 static const theme_t themes[] =
@@ -134,7 +134,6 @@ static const theme_t themes[] =
     "fg = #89b4fa\n"
     "effort_fg = #7f849c\n"
     "model_tag_fg = #1e1e2e\n"
-    "model_tag_bg = #89b4fa\n"
     "[context]\n"
     "fg = #7f849c\n"
     "used_fg = #89b4fa\n"
@@ -156,7 +155,6 @@ static const theme_t themes[] =
     "fg = #81a1c1\n"
     "effort_fg = #616e88\n"
     "model_tag_fg = #2e3440\n"
-    "model_tag_bg = #81a1c1\n"
     "[context]\n"
     "fg = #616e88\n"
     "used_fg = #81a1c1\n"
@@ -178,7 +176,6 @@ static const theme_t themes[] =
     "fg = #8ec07c\n"
     "effort_fg = #928374\n"
     "model_tag_fg = #282828\n"
-    "model_tag_bg = #8ec07c\n"
     "[context]\n"
     "fg = #928374\n"
     "used_fg = #8ec07c\n"
@@ -200,7 +197,6 @@ static const theme_t themes[] =
     "fg = #bb9af7\n"
     "effort_fg = #737aa2\n"
     "model_tag_fg = #1a1b26\n"
-    "model_tag_bg = #bb9af7\n"
     "[context]\n"
     "fg = #737aa2\n"
     "used_fg = #bb9af7\n"
@@ -222,7 +218,6 @@ static const theme_t themes[] =
     "fg = #ff79c6\n"
     "effort_fg = #6272a4\n"
     "model_tag_fg = #282a36\n"
-    "model_tag_bg = #ff79c6\n"
     "[context]\n"
     "fg = #6272a4\n"
     "used_fg = #ff79c6\n"
@@ -244,7 +239,6 @@ static const theme_t themes[] =
     "fg = #c678dd\n"
     "effort_fg = #767676\n"
     "model_tag_fg = #282c34\n"
-    "model_tag_bg = #c678dd\n"
     "[context]\n"
     "fg = #767676\n"
     "used_fg = #c678dd\n"
@@ -266,7 +260,6 @@ static const theme_t themes[] =
     "fg = #c4a7e7\n"
     "effort_fg = #6e6a86\n"
     "model_tag_fg = #191724\n"
-    "model_tag_bg = #c4a7e7\n"
     "[context]\n"
     "fg = #6e6a86\n"
     "used_fg = #c4a7e7\n"
@@ -288,7 +281,6 @@ static const theme_t themes[] =
     "fg = #957fb8\n"
     "effort_fg = #727169\n"
     "model_tag_fg = #1f1f28\n"
-    "model_tag_bg = #957fb8\n"
     "[context]\n"
     "fg = #727169\n"
     "used_fg = #957fb8\n"
@@ -310,7 +302,6 @@ static const theme_t themes[] =
     "fg = #2aa198\n"
     "effort_fg = #586e75\n"
     "model_tag_fg = #002b36\n"
-    "model_tag_bg = #2aa198\n"
     "[context]\n"
     "fg = #586e75\n"
     "used_fg = #2aa198\n"
@@ -409,7 +400,6 @@ static void parse_order(config_t *, sv_t);
 static int token_index(const section_desc_t *, sv_t);
 static color_t named16(uint8_t);
 static void set_tok_fg(config_t *, section_id_t, const char *, color_t);
-static void set_tok_bg(config_t *, section_id_t, const char *, color_t);
 #endif
 
 #endif

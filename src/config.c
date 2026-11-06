@@ -35,14 +35,6 @@ set_tok_fg(config_t *cfg, section_id_t id, const char *token, color_t c)
   if(i >= 0) cfg->sec[id].tok_fg[i] = c;
 }
 
-static void
-set_tok_bg(config_t *cfg, section_id_t id, const char *token, color_t c)
-{
-  int i = token_index(&dcc_sections[id], sv_from_cstr(token));
-
-  if(i >= 0) cfg->sec[id].tok_bg[i] = c;
-}
-
 // The shipped theme. examples/config documents exactly these values.
 void
 config_defaults(config_t *cfg)
@@ -75,8 +67,7 @@ config_defaults(config_t *cfg)
   sc->format = sv_from_cstr("{name} {ver} \xc2\xb7 {effort}");
   sc->fg = named16(13);             // bright_magenta
   set_tok_fg(cfg, SEC_MODEL, "effort", dim);
-  set_tok_fg(cfg, SEC_MODEL, "model_tag", named16(0));    // black
-  set_tok_bg(cfg, SEC_MODEL, "model_tag", sc->fg);
+  set_tok_fg(cfg, SEC_MODEL, "model_tag", named16(0));    // black, on the fg
 
   sc = &cfg->sec[SEC_CONTEXT];
   sc->format = sv_from_cstr("{label} {used}/{ceiling} {pct}");

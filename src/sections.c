@@ -21,19 +21,23 @@ tok_index(const section_desc_t *desc, const char *name)
   return(-1);
 }
 
-static void
+// The slot it filled, or NULL for a name the section doesn't know or a full set.
+static fmt_token_t *
 add_tok(tokset_t *ts, section_id_t id, const config_t *cfg, const char *name,
         sv_t value)
 {
   int i = tok_index(&dcc_sections[id], name);
+  fmt_token_t *t;
 
-  if(i < 0 || ts->n >= DCC_MAX_TOKENS) return;
+  if(i < 0 || ts->n >= DCC_MAX_TOKENS) return(NULL);
 
-  ts->toks[ts->n].name = name;
-  ts->toks[ts->n].value = value;
-  ts->toks[ts->n].fg = cfg->sec[id].tok_fg[i];
-  ts->toks[ts->n].bg = cfg->sec[id].tok_bg[i];
-  ts->n++;
+  t = &ts->toks[ts->n++];
+  t->name = name;
+  t->value = value;
+  t->fg = cfg->sec[id].tok_fg[i];
+  t->bg = cfg->sec[id].tok_bg[i];
+
+  return(t);
 }
 
 static void
@@ -291,6 +295,7 @@ sec_model(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
   tokset_t ts = { .n = 0 };
   sv_t name = pay->model_name;
   sv_t ver;
+  fmt_token_t *tag;
 
   if(!pay->has_model) return;
 
@@ -305,9 +310,11 @@ sec_model(sbuf_t *sb, const payload_t *pay, const config_t *cfg)
   add_tok(&ts, SEC_MODEL, cfg, "ver", ver);
   add_tok(&ts, SEC_MODEL, cfg, "effort", pay->effort);
   add_tok(&ts, SEC_MODEL, cfg, "id", pay->model_id);
-  add_tok(&ts, SEC_MODEL, cfg, "model_tag",
-          join_model(tagbuf, sizeof tagbuf, name, ver));
-  ts.toks[ts.n - 1].pill = true;
+  tag = add_tok(&ts, SEC_MODEL, cfg, "model_tag",
+                join_model(tagbuf, sizeof tagbuf, name, ver));
+
+  if(tag) tag->pill = true;
+
   add_tok(&ts, SEC_MODEL, cfg, "effort_plain", pay->effort);
   run_fmt(sb, SEC_MODEL, cfg, &ts);
 }

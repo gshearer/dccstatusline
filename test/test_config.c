@@ -537,10 +537,10 @@ test_theme(void)
             && sv_same(cfg.sec[s].format, defaults.sec[s].format),
             "%s leaves %s resets, label and format", name, dcc_sections[s].name);
 
-    // The pill fills with the model's color under text of its own. {effort} stays
-    // unfilled, and {effort_plain} has no color, so it takes the model's too.
-    CHECK(color_eq(cfg.sec[SEC_MODEL].tok_bg[tok(SEC_MODEL, "model_tag")],
-                   cfg.sec[SEC_MODEL].fg)
+    // The pill leaves its fill unset, so it takes the model's color, under text
+    // of its own. {effort} stays unfilled, and {effort_plain} has no color, so
+    // it takes the model's too.
+    CHECK(cfg.sec[SEC_MODEL].tok_bg[tok(SEC_MODEL, "model_tag")].kind == COLOR_NONE
           && cfg.sec[SEC_MODEL].tok_fg[tok(SEC_MODEL, "model_tag")].kind != COLOR_NONE
           && cfg.sec[SEC_MODEL].tok_bg[tok(SEC_MODEL, "effort")].kind == COLOR_NONE
           && cfg.sec[SEC_MODEL].tok_fg[tok(SEC_MODEL, "effort_plain")].kind == COLOR_NONE
