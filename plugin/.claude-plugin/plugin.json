@@ -6,5 +6,6 @@
   "homepage": "https://github.com/gshearer/dccstatusline",
   "repository": "https://github.com/gshearer/dccstatusline",
   "license": "MIT",
-  "keywords": ["statusline", "status-line", "c"]
+  "keywords": ["statusline", "status-line", "c"],
+  "types": "./types/index.d.ts"
 }

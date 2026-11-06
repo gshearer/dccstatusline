@@ -35,6 +35,14 @@ set_tok_fg(config_t *cfg, section_id_t id, const char *token, color_t c)
   if(i >= 0) cfg->sec[id].tok_fg[i] = c;
 }
 
+static void
+set_tok_bg(config_t *cfg, section_id_t id, const char *token, color_t c)
+{
+  int i = token_index(&dcc_sections[id], sv_from_cstr(token));
+
+  if(i >= 0) cfg->sec[id].tok_bg[i] = c;
+}
+
 // The shipped theme. examples/config documents exactly these values.
 void
 config_defaults(config_t *cfg)
@@ -67,6 +75,8 @@ config_defaults(config_t *cfg)
   sc->format = sv_from_cstr("{name} {ver} \xc2\xb7 {effort}");
   sc->fg = named16(13);             // bright_magenta
   set_tok_fg(cfg, SEC_MODEL, "effort", dim);
+  set_tok_fg(cfg, SEC_MODEL, "model_tag", named16(0));    // black
+  set_tok_bg(cfg, SEC_MODEL, "model_tag", sc->fg);
 
   sc = &cfg->sec[SEC_CONTEXT];
   sc->format = sv_from_cstr("{label} {used}/{ceiling} {pct}");
@@ -209,9 +219,89 @@ parse_order(config_t *cfg, sv_t value)
 }
 
 static void
+set_theme(config_t *cfg, sv_t value)
+{
+  if(cfg->theme_pinned) return;   // the command line already chose
+
+  if(cfg->themed)
+    fprintf(stderr, "dccstatusline: config: theme already set, ignored: %.*s\n",
+            (int)value.n, value.p);
+
+  else if(!config_theme(cfg, value))
+    fprintf(stderr, "dccstatusline: config: unknown theme: %.*s\n",
+            (int)value.n, value.p);
+}
+
+// PROFILE_NONE has no name, so it doubles as not found.
+static profile_t
+profile_find(sv_t name)
+{
+  profile_t i;
+
+  for(i = PROFILE_NONE + 1; i < PROFILE_COUNT; i++)
+    if(sv_eq_cstr(name, profiles[i].name)) return(i);
+
+  return(PROFILE_NONE);
+}
+
+// Only recorded here: config_load applies it once the whole buffer is in.
+static void
+set_profile(config_t *cfg, sv_t value)
+{
+  profile_t id = profile_find(value);
+
+  if(id != PROFILE_NONE) cfg->profile = id;
+
+  else fprintf(stderr, "dccstatusline: config: bad profile: %.*s\n",
+               (int)value.n, value.p);
+}
+
+// Only recorded here too: the glyphs are the profile's, applied with it.
+static void
+set_glyphs(config_t *cfg, sv_t value)
+{
+  if(!parse_glyphs(value, &cfg->glyphs))
+    fprintf(stderr, "dccstatusline: config: bad glyphs: %.*s\n",
+            (int)value.n, value.p);
+}
+
+// The format the glyphs key picks for a section, or the plain one.
+static const char *
+profile_format(const profile_def_t *p, glyphs_t glyphs, size_t i)
+{
+  const char *const f = glyphs == GLYPHS_NERDFONT ? p->nerdfont[i]
+                        : glyphs == GLYPHS_ON     ? p->glyphs[i]
+                                                  : NULL;
+
+  return(f ? f : p->format[i]);
+}
+
+// The views point at string literals, so they alias no buffer.
+static void
+apply_profile(config_t *cfg)
+{
+  const profile_def_t *p;
+  size_t i;
+
+  if(cfg->profile == PROFILE_NONE) return;
+
+  p = &profiles[cfg->profile];
+  parse_order(cfg, sv_from_cstr(p->sections));
+
+  for(i = 0; i < SEC_COUNT; i++)
+    cfg->sec[i].format = sv_from_cstr(profile_format(p, cfg->glyphs, i));
+}
+
+static void
 set_global(config_t *cfg, sv_t key, sv_t value)
 {
-  if(sv_eq_cstr(key, "sections")) parse_order(cfg, value);
+  if(sv_eq_cstr(key, "theme")) set_theme(cfg, value);
+
+  else if(sv_eq_cstr(key, "profile")) set_profile(cfg, value);
+
+  else if(sv_eq_cstr(key, "glyphs")) set_glyphs(cfg, value);
+
+  else if(sv_eq_cstr(key, "sections")) parse_order(cfg, value);
 
   else if(sv_eq_cstr(key, "separator")) cfg->separator = value;
 
@@ -268,6 +358,21 @@ parse_u16(sv_t v, uint16_t *out)
   }
 
   *out = (uint16_t)acc;
+
+  return(true);
+}
+
+// off, on or nerdfont. Anything else fails, so the caller keeps its value.
+static bool
+parse_glyphs(sv_t v, glyphs_t *out)
+{
+  if(sv_eq_cstr(v, "off")) *out = GLYPHS_OFF;
+
+  else if(sv_eq_cstr(v, "on")) *out = GLYPHS_ON;
+
+  else if(sv_eq_cstr(v, "nerdfont")) *out = GLYPHS_NERDFONT;
+
+  else return(false);
 
   return(true);
 }
@@ -392,8 +497,8 @@ handle_line(config_t *cfg, int *cur, char *p, size_t n)
   else set_section(cfg, *cur, key, value);
 }
 
-void
-config_load(config_t *cfg, char *buf, size_t n)
+static void
+load(config_t *cfg, char *buf, size_t n)
 {
   size_t pos = 0;
   int cur = CUR_NONE;
@@ -409,6 +514,71 @@ config_load(config_t *cfg, char *buf, size_t n)
     handle_line(cfg, &cur, buf + pos, len);
     pos += raw + 1;
   }
+}
+
+void
+config_load(config_t *cfg, char *buf, size_t n)
+{
+  load(cfg, buf, n);
+  apply_profile(cfg);
+}
+
+bool
+config_profile(config_t *cfg, sv_t name)
+{
+  profile_t id = profile_find(name);
+
+  if(id == PROFILE_NONE) return(false);
+
+  cfg->profile = id;
+  apply_profile(cfg);
+
+  return(true);
+}
+
+bool
+config_glyphs(config_t *cfg, sv_t value)
+{
+  if(!parse_glyphs(value, &cfg->glyphs)) return(false);
+
+  apply_profile(cfg);
+
+  return(true);
+}
+
+// The preset's text is copied out because the loader writes as it parses
+// (quoted values collapse in place). Every preset key is a color, parsed by
+// value, so nothing points into buf once load returns.
+bool
+config_theme(config_t *cfg, sv_t name)
+{
+  static char buf[4096];
+  size_t i;
+
+  for(i = 0; i < sizeof themes / sizeof themes[0]; i++)
+  {
+    size_t n;
+
+    if(!sv_eq_cstr(name, themes[i].name)) continue;
+
+    n = strlen(themes[i].ini);
+
+    if(n > sizeof buf) return(false);
+
+    cfg->themed = true;
+    memcpy(buf, themes[i].ini, n);
+    load(cfg, buf, n);   // mid-load: the outer config_load applies the profile
+
+    return(true);
+  }
+
+  return(false);
+}
+
+const char *
+config_theme_name(size_t i)
+{
+  return(i < sizeof themes / sizeof themes[0] ? themes[i].name : NULL);
 }
 
 bool

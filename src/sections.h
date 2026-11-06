@@ -32,6 +32,7 @@ static sv_t fmt_clock(char *, size_t, int64_t, bool, bool);
 static sv_t fmt_countdown(char *, size_t, int64_t, int64_t, bool);
 static sv_t derive_ver(char *, size_t, sv_t);
 static bool name_carries_ver(sv_t, sv_t);
+static sv_t join_model(char *, size_t, sv_t, sv_t);
 static void sec_cwd(sbuf_t *, const payload_t *, const config_t *,
                     const gitinfo_t *);
 static sv_t path_from_repo(sv_t, const gitinfo_t *);

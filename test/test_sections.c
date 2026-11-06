@@ -35,6 +35,7 @@ static void test_resets_styles(void);
 static void test_resets_default(void);
 static void test_cwd_styles(void);
 static void test_ansi_exact(void);
+static void test_model_tag(void);
 
 // Colors off everywhere: expectations read as plain text. SGR bytes are
 // pinned by test_color/test_fmt and one exact case below.
@@ -451,6 +452,95 @@ test_ansi_exact(void)
   CHECK_MEM(sb.p, sb.len, "\x1b[0;92mmain");
 }
 
+// The pill: caps in the fill's color around one fill, the effort beside it in
+// the section's color, and with no effort only the effort goes.
+static void
+test_model_tag(void)
+{
+  config_t cfg;
+  payload_t pay = sample();
+  gitinfo_t nogit = { false, "", 0, 0 };
+  char ini[] =
+    "[statusline]\nsections = model\n"
+    "[model]\nformat = {model_tag} {effort_plain}\n";
+  char recolored[] =
+    "[statusline]\nsections = model\n"
+    "[model]\nformat = {model_tag}\nmodel_tag_bg = bright_cyan\n";
+  char bare[] =
+    "[statusline]\nsections = model\n"
+    "[model]\nformat = {model_tag}\n";
+  char big[64];
+  char want[128];
+  char out[1024];
+  static char mem[256];
+  sbuf_t sb;
+  size_t n;
+  int wn;
+
+  config_defaults(&cfg);
+  config_load(&cfg, ini, sizeof ini - 1);
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  statusline_render(&sb, &pay, &cfg, &nogit, TEST_NOW);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;95m\xee\x82\xb6\x1b[0;30;105mFable 5"
+            "\x1b[0;95m\xee\x82\xb4\x1b[0;95m \x1b[0;95mmax");
+
+  pay.effort.n = 0;
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  statusline_render(&sb, &pay, &cfg, &nogit, TEST_NOW);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;95m\xee\x82\xb6\x1b[0;30;105mFable 5\x1b[0;95m\xee\x82\xb4");
+
+  // The caps follow the fill, not the section's fg.
+  pay = sample();
+  config_defaults(&cfg);
+  config_load(&cfg, recolored, sizeof recolored - 1);
+  sbuf_init(&sb, mem, sizeof mem, 0);
+  statusline_render(&sb, &pay, &cfg, &nogit, TEST_NOW);
+  CHECK_MEM(sb.p, sb.len,
+            "\x1b[0;96m\xee\x82\xb6\x1b[0;30;106mFable 5\x1b[0;96m\xee\x82\xb4");
+
+  // A name that already ends with its version isn't doubled.
+  config_defaults(&cfg);
+  config_load(&cfg, bare, sizeof bare - 1);
+  plain(&cfg);
+  pay.model_name = sv_from_cstr("Fable 5");
+  render_plain(&pay, &cfg, &nogit, out, &n);
+  CHECK_MEM(out, n, "\xee\x82\xb6" "Fable 5\xee\x82\xb4");
+
+  // The join fills its buffer exactly, and one byte more keeps the name whole.
+  memset(big, 'x', sizeof big);
+  pay.model_name = (sv_t){ big, sizeof big - 2 };
+  wn = snprintf(want, sizeof want, "\xee\x82\xb6%.*s 5\xee\x82\xb4",
+                (int)sizeof big - 2, big);
+  render_plain(&pay, &cfg, &nogit, out, &n);
+  CHECK_MEM(out, n, want);
+  CHECK((size_t)wn == n, "the longest join");
+
+  pay.model_name = (sv_t){ big, sizeof big - 1 };
+  snprintf(want, sizeof want, "\xee\x82\xb6%.*s\xee\x82\xb4",
+           (int)sizeof big - 1, big);
+  render_plain(&pay, &cfg, &nogit, out, &n);
+  CHECK_MEM(out, n, want);
+
+  // The profile's own line under nerdfont, the dot gone, both ways.
+  pay = sample();
+  config_defaults(&cfg);
+  plain(&cfg);
+  CHECK(config_profile(&cfg, sv_from_cstr("basic"))
+        && config_glyphs(&cfg, sv_from_cstr("nerdfont")), "basic with nerdfont");
+  render_plain(&pay, &cfg, &nogit, out, &n);
+  CHECK_MEM(out, n,
+            "~/proj \xe2\x94\x82 \xee\x82\xb6" "Fable 5\xee\x82\xb4 max \xe2\x94\x82 "
+            "ctx 8% \xe2\x94\x82 5h 24% \xe2\x94\x82 7d 41%");
+
+  pay.effort.n = 0;
+  render_plain(&pay, &cfg, &nogit, out, &n);
+  CHECK_MEM(out, n,
+            "~/proj \xe2\x94\x82 \xee\x82\xb6" "Fable 5\xee\x82\xb4 \xe2\x94\x82 "
+            "ctx 8% \xe2\x94\x82 5h 24% \xe2\x94\x82 7d 41%");
+}
+
 int
 main(void)
 {
@@ -463,6 +553,7 @@ main(void)
   test_resets_default();
   test_cwd_styles();
   test_ansi_exact();
+  test_model_tag();
 
   return(check_failures ? 1 : 0);
 }

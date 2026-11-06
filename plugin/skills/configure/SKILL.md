@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Customize dccstatusline, however it was installed. When dccstatusline is the active status line, use this instead of the built-in status line setup whenever the user wants to change their status line's colors, sections, order, separator, formats, cwd shortening, or reset-time style, or asks what it can show.
+description: Customize dccstatusline, however it was installed. When dccstatusline is the active status line, use this instead of the built-in status line setup whenever the user wants to change their status line's colors, sections, order, separator, formats, profile (basic or detailed) and its glyphs (plain or Nerd Font), cwd shortening, or reset-time style, or asks what it can show.
 ---
 
 # Configure dccstatusline
@@ -9,6 +9,9 @@ dccstatusline reads one INI file. The plugin does not manage that file, so it
 survives plugin updates and uninstalls. The reader skips unknown keys and
 sections without a word, and a bad value silently keeps its default. Because
 of that, every change is previewed before it is applied.
+
+To try or pick one of the preset themes, use `/dccstatusline:theme` instead.
+It shows each preset in color and applies the one you pick.
 
 ## 0. Find the active dccstatusline binary
 
@@ -32,6 +35,15 @@ the binary to configure.
 If nothing sets `statusLine`, or its command is something else, stop. Tell the
 user which file sets it and what it runs, and offer `/dccstatusline:setup` to
 switch to dccstatusline. Don't edit the config.
+
+Note any `--theme <name>`, `--profile <name>` or `--glyphs on|off|nerdfont` after the
+binary. Each flag stands in for the config key of the same name and wins over
+it: `--theme` acts as if `theme = <name>` were the config's first line, so the
+config's own `theme` key is skipped while its color keys still apply on top,
+`--profile` beats the config's `profile` key, and `--glyphs` its `glyphs` key. A change to a key a flag
+overrides won't show on screen, and the preview below runs without the
+flags. When the request touches one, tell the user, and offer to drop the
+flag from the command in the file that set it.
 
 ## 1. Find the config
 
@@ -64,6 +76,32 @@ hand.
 Write the proposed config to `${CLAUDE_PLUGIN_DATA}/config.draft`. Start from
 the current config, or from an empty file, and change only what the request
 needs. Don't paste in the whole reference: defaults don't need restating.
+
+A `separator` that reads as blank between its quotes, or a `format` with a gap
+where a glyph should be, holds a private-use glyph such as the thin arrow
+U+E0B1, which tool output hides. Make the draft with `cp` and keep that line, or
+change it with `sed`: retyping the file loses the glyph. To set U+E0B1, write
+its bytes from the shell, `printf '\356\202\261'`. It needs a Nerd Font, so ask
+about the font first.
+
+A profile, set by `profile =` or by `--profile`, is a whole line decided for
+the user. It replaces `[statusline] sections` and every `format`, wherever
+those keys sit, and leaves the colors, labels, separator, `thousands`, cwd
+shortening and reset styles to the config. Both profiles draw all six
+sections: basic trims them to the figures
+(`main │ Opus 5.5 · high │ ctx 43% │ 5h 24% │ 7d 41%`), and detailed adds the
+token counts and the reset times. Neither draws a glyph until
+`[statusline] glyphs = on` turns them on: `⎇` before the branch and, under
+detailed, `↻` before both reset times. `glyphs = nerdfont` draws U+E0A0 and
+U+F021 in their place, the model as a filled pill between U+E0B6 and U+E0B4, and
+the effort beside it with no `·`: they need a Nerd Font and show as empty boxes without
+one, so ask about the font first.
+With no profile, the sections and formats are the config's own, glyphs included, and the `glyphs` key does
+nothing: to add or drop one there, change the `format`. A Nerd Font glyph goes in
+by its bytes, as the arrow does above: `printf '\356\202\240'` for U+E0A0 and
+`printf '\357\200\241'` for U+F021. `{model_tag}` draws its own caps. If a profile is set and the
+request changes the sections, their order or a format, those keys would do
+nothing: ask whether to remove the profile first.
 
 ## 4. Preview
 
