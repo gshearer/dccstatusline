@@ -27,7 +27,7 @@ static bool write_all(const char *, size_t);
 static bool want_git(const config_t *);
 static bool print_themes(const char *);
 static void parse_flags(int, char **, const char **, const char **,
-                        const char **);
+                        const char **, const char **);
 
 static char stdin_buf[64 * 1024];
 static char config_buf[32 * 1024];
@@ -96,11 +96,17 @@ want_git(const config_t *cfg)
   return(false);
 }
 
-// Every preset over the compiled defaults, one sample line each, so they can be
-// compared side by side. The user's config stays out of it: this shows the
-// themes as shipped, with only the overlay on top — INI text laid over each
-// preset as if it sat below the theme line. The clock is fixed too — the
-// countdowns measure against the same instant the sample resets were built from.
+// Every preset over the stock line, one sample line each, labeled with its
+// name, so they can be compared side by side. The user's config stays out of
+// it: this shows the themes as shipped, with only the overlay on top — INI text
+// laid over each preset as if it sat below the theme line. The name is the
+// table's own, so it always lays and counts as the theme, and a theme key in the
+// overlay yields as it would below a theme line. A palette key in the overlay
+// lays the preset again in it. No theme is no preset and has no row: the plugin
+// picker draws it with a plain run of the same sample, as a payload in
+// plugin/hooks/register.tsx, so a change to the sample here goes there too. The
+// clock is fixed too — the countdowns measure against the same instant the
+// sample resets were built from.
 static bool
 print_themes(const char *overlay)
 {
@@ -137,12 +143,10 @@ print_themes(const char *overlay)
     const int n = snprintf(label, sizeof label, "%-12s", name);
 
     config_defaults(&cfg);
-
-    // The name is the table's own: only a preset outgrowing its buffer fails.
-    if(!config_theme(&cfg, sv_from_cstr(name))) return(false);
-
+    config_theme(&cfg, sv_from_cstr(name));
     memcpy(config_buf, overlay, on);   // the loader writes as it parses
     config_load(&cfg, config_buf, on);
+
     sbuf_init(&line, line_mem, sizeof line_mem, 5);   // tail: reset + newline
     statusline_render(&line, &pay, &cfg, &git, now);
     sbuf_append_tail(&line, "\x1b[0m\n", 5);
@@ -155,18 +159,21 @@ print_themes(const char *overlay)
   return(true);
 }
 
-// The live run's flags: --theme, --profile and --glyphs each take the next
-// word, and a repeat wins. Anything else is noted and passed over — a typo in
-// the settings.json command must not cost the line.
+// The live run's flags: --theme, --palette, --profile and --glyphs each take
+// the next word, and a repeat wins. Anything else is noted and passed over — a
+// typo in the settings.json command must not cost the line.
 static void
-parse_flags(int argc, char **argv, const char **theme, const char **profile,
-            const char **glyphs)
+parse_flags(int argc, char **argv, const char **theme, const char **palette,
+            const char **profile, const char **glyphs)
 {
   int i;
 
   for(i = 1; i < argc; i++)
   {
     if(i + 1 < argc && strcmp(argv[i], "--theme") == 0) *theme = argv[++i];
+
+    else if(i + 1 < argc && strcmp(argv[i], "--palette") == 0)
+      *palette = argv[++i];
 
     else if(i + 1 < argc && strcmp(argv[i], "--profile") == 0)
       *profile = argv[++i];
@@ -187,7 +194,7 @@ main(int argc, char **argv)
   gitinfo_t git = { false, "", 0, 0 };
   sbuf_t line;
   size_t n;
-  const char *theme = NULL, *profile = NULL, *glyphs = NULL;
+  const char *theme = NULL, *palette = NULL, *profile = NULL, *glyphs = NULL;
 
   if(argc > 1 && strcmp(argv[1], "--version") == 0)
   {
@@ -202,11 +209,20 @@ main(int argc, char **argv)
   if(argc > 1 && strcmp(argv[1], "--themes") == 0)
     return(print_themes(argc > 2 ? argv[2] : "") ? 0 : 1);
 
-  parse_flags(argc, argv, &theme, &profile, &glyphs);
+  parse_flags(argc, argv, &theme, &palette, &profile, &glyphs);
   signal(SIGPIPE, SIG_IGN);   // a cancelled in-flight refresh must not kill us
 
   n = stdin_drain();
   config_defaults(&cfg);
+
+  // Before --theme, so the theme lays in it; the config's palette key then
+  // yields, and its color keys still land on top.
+  if(palette)
+  {
+    if(config_palette(&cfg, sv_from_cstr(palette))) cfg.palette_pinned = true;
+
+    else fprintf(stderr, "dccstatusline: --palette: bad palette: %s\n", palette);
+  }
 
   // As if the config's first line named it: its own theme key then yields, and
   // its color keys still land on top.

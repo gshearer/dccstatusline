@@ -35,7 +35,9 @@ set_tok_fg(config_t *cfg, section_id_t id, const char *token, color_t c)
   if(i >= 0) cfg->sec[id].tok_fg[i] = c;
 }
 
-// The shipped theme. examples/config documents exactly these values.
+// The stock line, with no theme: the terminal's own 16 colors, each section
+// in its own over bright_black. No palette touches it. examples/config
+// documents exactly these values.
 void
 config_defaults(config_t *cfg)
 {
@@ -87,6 +89,31 @@ config_defaults(config_t *cfg)
   sc->fg = dim;
   sc->resets = RESETS_COUNTDOWN;
   set_tok_fg(cfg, SEC_PLAN_LONG, "pct", named16(3));   // yellow
+}
+
+// A preset's colors on the keys it colors, and no others, in the palette
+// cfg->palette holds: the model takes the first color under monochrome and the
+// second otherwise, and the usage figures the model's, or the third under
+// tritone.
+static void
+lay(config_t *cfg, const theme_t *t)
+{
+  const color_t model = cfg->palette == PALETTE_MONOCHROME ? t->first : t->second;
+  const color_t figures = cfg->palette == PALETTE_TRITONE ? t->third : model;
+
+  cfg->sep_fg = t->muted;
+  cfg->sec[SEC_CWD].fg = t->first;
+  cfg->sec[SEC_GIT].fg = t->first;
+  cfg->sec[SEC_MODEL].fg = model;
+  set_tok_fg(cfg, SEC_MODEL, "effort", t->muted);
+  set_tok_fg(cfg, SEC_MODEL, "model_tag", t->base);   // on the model's color
+  cfg->sec[SEC_CONTEXT].fg = t->muted;
+  set_tok_fg(cfg, SEC_CONTEXT, "used", figures);
+  set_tok_fg(cfg, SEC_CONTEXT, "pct", figures);
+  cfg->sec[SEC_PLAN_SHORT].fg = t->muted;
+  set_tok_fg(cfg, SEC_PLAN_SHORT, "pct", figures);
+  cfg->sec[SEC_PLAN_LONG].fg = t->muted;
+  set_tok_fg(cfg, SEC_PLAN_LONG, "pct", figures);
 }
 
 static sv_t
@@ -256,6 +283,16 @@ set_glyphs(config_t *cfg, sv_t value)
             (int)value.n, value.p);
 }
 
+static void
+set_palette(config_t *cfg, sv_t value)
+{
+  if(cfg->palette_pinned) return;   // the command line already chose
+
+  if(!config_palette(cfg, value))
+    fprintf(stderr, "dccstatusline: config: bad palette: %.*s\n",
+            (int)value.n, value.p);
+}
+
 // The format the glyphs key picks for a section, or the plain one.
 static const char *
 profile_format(const profile_def_t *p, glyphs_t glyphs, size_t i)
@@ -291,6 +328,8 @@ set_global(config_t *cfg, sv_t key, sv_t value)
   else if(sv_eq_cstr(key, "profile")) set_profile(cfg, value);
 
   else if(sv_eq_cstr(key, "glyphs")) set_glyphs(cfg, value);
+
+  else if(sv_eq_cstr(key, "palette")) set_palette(cfg, value);
 
   else if(sv_eq_cstr(key, "sections")) parse_order(cfg, value);
 
@@ -362,6 +401,22 @@ parse_glyphs(sv_t v, glyphs_t *out)
   else if(sv_eq_cstr(v, "on")) *out = GLYPHS_ON;
 
   else if(sv_eq_cstr(v, "nerdfont")) *out = GLYPHS_NERDFONT;
+
+  else return(false);
+
+  return(true);
+}
+
+// monochrome, duotone or tritone. Anything else fails, so the caller keeps
+// its value.
+static bool
+parse_palette(sv_t v, palette_t *out)
+{
+  if(sv_eq_cstr(v, "monochrome")) *out = PALETTE_MONOCHROME;
+
+  else if(sv_eq_cstr(v, "duotone")) *out = PALETTE_DUOTONE;
+
+  else if(sv_eq_cstr(v, "tritone")) *out = PALETTE_TRITONE;
 
   else return(false);
 
@@ -488,8 +543,8 @@ handle_line(config_t *cfg, int *cur, char *p, size_t n)
   else set_section(cfg, *cur, key, value);
 }
 
-static void
-load(config_t *cfg, char *buf, size_t n)
+void
+config_load(config_t *cfg, char *buf, size_t n)
 {
   size_t pos = 0;
   int cur = CUR_NONE;
@@ -505,12 +560,7 @@ load(config_t *cfg, char *buf, size_t n)
     handle_line(cfg, &cur, buf + pos, len);
     pos += raw + 1;
   }
-}
 
-void
-config_load(config_t *cfg, char *buf, size_t n)
-{
-  load(cfg, buf, n);
   apply_profile(cfg);
 }
 
@@ -537,33 +587,45 @@ config_glyphs(config_t *cfg, sv_t value)
   return(true);
 }
 
-// The preset's text is copied out because the loader writes as it parses
-// (quoted values collapse in place). Every preset key is a color, parsed by
-// value, so nothing points into buf once load returns.
 bool
 config_theme(config_t *cfg, sv_t name)
 {
-  static char buf[4096];
   size_t i;
+
+  // A v0.0.6 config, --print-config's own among them, may still name it.
+  if(sv_eq_cstr(name, "default"))
+  {
+    cfg->themed = true;
+
+    return(true);
+  }
 
   for(i = 0; i < sizeof themes / sizeof themes[0]; i++)
   {
-    size_t n;
-
     if(!sv_eq_cstr(name, themes[i].name)) continue;
 
-    n = strlen(themes[i].ini);
-
-    if(n > sizeof buf) return(false);
-
     cfg->themed = true;
-    memcpy(buf, themes[i].ini, n);
-    load(cfg, buf, n);   // mid-load: the outer config_load applies the profile
+    cfg->theme = (uint8_t)(i + 1);
+    lay(cfg, &themes[i]);
 
     return(true);
   }
 
   return(false);
+}
+
+// Lays the preset in force again where the key sits, so keys after it win and
+// color keys between it and the theme line are painted over, as by the theme
+// itself. With no theme there is nothing to lay: the palette is recorded for a
+// --theme or theme line that comes after it, and the stock colors stay.
+bool
+config_palette(config_t *cfg, sv_t value)
+{
+  if(!parse_palette(value, &cfg->palette)) return(false);
+
+  if(cfg->theme) lay(cfg, &themes[cfg->theme - 1]);
+
+  return(true);
 }
 
 const char *

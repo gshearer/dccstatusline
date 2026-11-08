@@ -20,7 +20,7 @@ covers building, TODO.md holds the work queue.
 ```
 main: parse flags, signal(SIGPIPE, SIG_IGN)
   → read(0) loop, EINTR-safe → stdin_buf[64 KiB]     overflow ⇒ treated as malformed
-  → config: compiled defaults ← --theme ← INI file overlay ← --profile ← --glyphs
+  → config: compiled defaults ← --palette ← --theme ← INI file overlay ← --profile ← --glyphs
                                                       bad file/key/flag ⇒ the last value holds
   → payload_parse: best-effort → payload_t            presence flag per field
   → gitinfo_read                                      only if the git section is enabled
@@ -38,7 +38,7 @@ behind `#ifdef <MODULE>_INTERNAL`, `.c` files hold function bodies only.
 
 | module | knows about | responsibility |
 |---|---|---|
-| `main.c` | orchestration | flow above; `--version`, `--print-config`, `--themes`; the live run's `--theme` / `--profile` / `--glyphs`; sole includer of generated `version.h` |
+| `main.c` | orchestration | flow above; `--version`, `--print-config`, `--themes`; the live run's `--theme` / `--palette` / `--profile` / `--glyphs`; sole includer of generated `version.h` |
 | `json.c` | JSON, nothing else | pull cursor: enter object, iterate keys, read scalars; **iterative** skip of any value with depth cap 64; in-place string unescape |
 | `payload.c` | Claude Code's schema | drives `json` over known key paths → `payload_t` (string views, numbers, `has_*` flags); best-effort partial fill |
 | `config.c` | the INI dialect | file → `config_t` overlaying compiled defaults; per-key tolerance; owns the defaults, theme and profile tables |
@@ -94,30 +94,44 @@ bad value means that key keeps its default (one stderr note, visible in `claude 
 
 INI dialect: `[section]`, `key = value`, `#` comments, quoted values for significant
 whitespace (`separator = " │ "`), UTF-8 passed through as bytes, unknown sections and
-keys ignored (forward compatibility). `[statusline]` holds `theme` (a preset), `profile`
-(`basic` or `detailed`, unset by default), `glyphs` (`off`, `on` or `nerdfont`, a
-profile's, off by default), `sections` (order list), `separator` (+ `separator_fg/bg`), `thousands`.
+keys ignored (forward compatibility). `[statusline]` holds `theme` (a preset), `palette`
+(`monochrome`, `duotone` or `tritone`, tritone by default), `profile` (`basic` or
+`detailed`, unset by default), `glyphs` (`off`, `on` or `nerdfont`, a profile's, off by
+default), `sections` (order list), `separator` (+ `separator_fg/bg`), `thousands`.
 
-Themes are compiled-in INI text, colors only, kept in a table beside the
-defaults. Each named preset is two colors of its palette and a gray: the first for where
-you are (cwd and branch), the second for the model and every usage figure, the gray for
-the separator and all literals. `{model_tag}` fills with the second, which it inherits from
-the model's `fg` (an unset pill `bg` falls back to the section's `fg`), and writes on the
-palette's background. `theme = name` feeds that text through the same loader at
-the line where it sits, so keys after it override the preset and keys before it are
-overridden. The loader
-writes into its buffer (quoted values collapse in place), so the text is first copied
-into a static buffer in `config_theme`; every preset key is a color, parsed by value, so
-no view points into that buffer once the preset is loaded. Only the first `theme` key
-naming a known preset counts. `--themes` renders every preset over the defaults with a
-fixed sample payload and clock, ignoring the user's config, so it shows the presets as
-shipped. An optional second argument is INI text laid over each preset as if it sat
-below the theme line, which is how the plugin's picker previews its separator, glyphs
-and profile options; it borrows the config buffer, unused on that path, and is copied
-in afresh per preset. One too big for that buffer exits 1, which the contract above
-allows: `--themes` is not the status line's path. The picker's pick names a private-use separator by code point
-(`sep=U+E0B1`): the skill that writes the config is Claude, which can't see the character
-in tool output.
+Themes are compiled-in palettes, colors only, kept in a table beside the defaults: five
+colors per preset. The first is for where you are (cwd and branch), the second for the
+model, the third for every usage figure, the muted color for the separator and all
+literals, and the background is the one dark text, which `{model_tag}` writes on the
+model's color (an unset pill `bg` falls back to the section's `fg`). Each preset keeps
+its own muted color, and some aren't gray. `palette` decides how many of the three the
+line wears: `monochrome` paints the model and the figures in the first, `duotone` both in
+the second, `tritone` each in its own. With no theme the line is `config_defaults`'
+own, each section in its own of the terminal's 16 colors over bright_black, and no palette
+touches it. `theme = default`, v0.0.6's name for that line, still counts as the theme and
+lays nothing.
+`lay` writes a preset into `config_t` in the palette the config holds, and touches only
+the colors a preset owns: `separator_fg`, the cwd, git and model `fg`, `effort_fg`,
+`model_tag_fg`, the context and plan `fg`, `used_fg` and every `pct_fg`. `theme = name`
+lays it at the line where it sits, so keys after it override the preset and keys before
+it are overridden. Only the first `theme` key naming a known preset counts. `palette`
+follows the same rule: it records the palette and lays the preset in force again where
+its line sits, nothing with no theme, so it paints over any color key between the two.
+The theme skill writes it on the line right after `theme`. `--themes` renders every
+preset over the defaults, each labeled with its name, with a fixed sample payload and
+clock, ignoring the user's config, so it shows the presets as shipped. An optional second argument is INI text laid
+over each preset as if it sat below the theme line, which is how the plugin's picker
+previews its palette, separator, glyphs and profile options; a `palette` key there lays
+each preset again in it. It
+borrows the config buffer, unused on that path, and is copied in afresh per
+preset. One too big for that buffer exits 1, which the contract above allows: `--themes`
+is not the status line's path. No theme is no preset, so `--themes` has no row for it.
+The picker previews its `no theme` stop with a plain run instead: the same sample as
+a payload, `/dev/null` for the config, from `/` so no repository answers, and so no
+branch, since the sample's fixed repository is out of a payload's reach. It takes no
+INI, since the picker's options are a theme's and wait for one there. The picker's pick names a private-use separator by code
+point (`sep=U+E0B1`): the skill that writes the config is Claude, which can't see the
+character in tool output.
 
 A profile is opinionated: a compiled-in section list and one format per section, kept in
 a table beside the themes, and nothing else. Each profile carries two more tables, the
@@ -132,21 +146,21 @@ fill. The token draws the rounded caps U+E0B6 and U+E0B4 itself, in its `bg`. As
 the closing cap would sit in the run before `{effort_plain}`, and the swallow rule would
 take it with a missing effort. `{effort_plain}` is `{effort}` with no color of its own, so
 it takes the section's `fg`. It is a token of its own because a theme's colors apply
-whatever the glyphs, and `{effort}` keeps its gray on lines with no pill.
+whatever the glyphs, and `{effort}` keeps its muted color on lines with no pill.
 The `profile` and `glyphs` keys only record the choice;
 `config_load` applies them once the whole buffer has been read, so the profile replaces
 `sections` and every `format` wherever those keys sit, and `glyphs` counts on either side
 of the `profile` line, while colors, labels, the separator, `thousands`, cwd shortening
 and reset styles stay the config's. With no profile `glyphs` does nothing: the formats
 are the config's, glyphs included. The views point at string literals, so applying never
-touches a buffer. A preset's own load stops short of that step, so a profile is applied
-once, by the outermost load. The renderer knows nothing of profiles: they work entirely
+touches a buffer. The renderer knows nothing of profiles: they work entirely
 through formats.
 
-On the live run `--theme`, `--profile` and `--glyphs` stand in for those three keys and
-win over them. `--theme` is applied right after the defaults, before the file, as if it
-were the config's first line, and pins the theme so the file's own `theme` key yields
-without a note; the file's color keys still land on top. `--profile` is applied after the
+On the live run `--theme`, `--palette`, `--profile` and `--glyphs` stand in for those four
+keys and win over them. `--palette` is applied right after the defaults and pins the
+palette, so the file's own `palette` key yields without a note. `--theme` comes next, laid
+in that palette before the file, as if it were the config's first line, and pins the theme
+so the file's own `theme` key yields too; the file's color keys still land on top. `--profile` is applied after the
 file, so it beats the `profile` key, and `--glyphs` after that, reapplying the profile,
 so it beats `glyphs` whichever flag comes first. An unknown name, a flag with no value,
 or any other argument gets one stderr note and changes nothing, so a typo in the

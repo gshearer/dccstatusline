@@ -24,7 +24,7 @@ writes the setting. Re-running it updates the binary in place.
    exist, treat it as `{}`.
    - If the first word of `statusLine.command` already equals the path from
      step 1, leave the file alone. The update is done. Any `--theme`,
-     `--profile` or `--glyphs` after it stays as the user set it.
+     `--palette`, `--profile` or `--glyphs` after it stays as the user set it.
    - If a different `statusLine` is set, show it to the user and ask before
      replacing it.
    - Otherwise set the following, keeping every other key exactly as it was:

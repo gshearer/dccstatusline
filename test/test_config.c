@@ -19,6 +19,8 @@ static void test_values(void);
 static void test_cwd_shortening(void);
 static void test_profile(void);
 static void test_theme(void);
+static bool figures_are(const config_t *, color_t);
+static void test_palette(void);
 static void test_path(void);
 
 // color_t is four bytes of enum followed by three of rgb, so it carries a byte
@@ -498,6 +500,17 @@ test_theme(void)
   }
 
   {
+    // default, v0.0.6's name for the stock line, is no preset: it counts as
+    // the theme, so a later one yields, and it lays nothing.
+    char ini[] = "[statusline]\ntheme = default\ntheme = nord\n";
+
+    config_defaults(&cfg);
+    config_load(&cfg, ini, sizeof ini - 1);
+    CHECK(cfg.themed && cfg.theme == 0 && style_eq(&cfg, &defaults),
+          "default keeps the stock line, and the theme after it yields");
+  }
+
+  {
     // --theme: the config's own theme key yields without a word, and its
     // color keys still land on top.
     char ini[] = "[statusline]\ntheme = dracula\n[cwd]\nfg = red\n";
@@ -512,8 +525,8 @@ test_theme(void)
           "a color key lands on the pinned theme");
   }
 
-  // Every preset applies and changes nothing but color; each recolors
-  // something, except default, which is the defaults exactly.
+  // Every preset applies, recolors the stock line, and changes nothing but
+  // color.
   for(i = 0; (name = config_theme_name(i)); i++)
   {
     size_t s;
@@ -528,8 +541,7 @@ test_theme(void)
     CHECK(sv_same(cfg.thousands, defaults.thousands), "%s leaves thousands", name);
     CHECK(sv_same(cfg.separator, defaults.separator), "%s leaves the separator", name);
     CHECK(cfg.profile == PROFILE_NONE, "%s leaves the profile", name);
-    CHECK((strcmp(name, "default") == 0) == style_eq(&cfg, &defaults),
-          "%s restyles exactly when it is not default", name);
+    CHECK(!style_eq(&cfg, &defaults), "%s restyles", name);
 
     for(s = 0; s < SEC_COUNT; s++)
       CHECK(cfg.sec[s].resets == defaults.sec[s].resets
@@ -547,21 +559,149 @@ test_theme(void)
           && cfg.sec[SEC_MODEL].tok_bg[tok(SEC_MODEL, "effort_plain")].kind == COLOR_NONE,
           "%s fills the model pill and only the pill", name);
 
-    // The usage figures wear the model's color. Each needs its own key, or the
-    // defaults' cyan and yellow show through.
-    if(strcmp(name, "default") != 0)
+    // The usage figures wear a third color, neither the model's nor where
+    // you are. Each needs its own key, or another preset's figures show through.
     {
-      const color_t second = cfg.sec[SEC_MODEL].fg;
+      const color_t third = cfg.sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "pct")];
 
-      CHECK(color_eq(cfg.sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "used")], second)
-            && color_eq(cfg.sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "pct")], second)
-            && color_eq(cfg.sec[SEC_PLAN_SHORT].tok_fg[tok(SEC_PLAN_SHORT, "pct")], second)
-            && color_eq(cfg.sec[SEC_PLAN_LONG].tok_fg[tok(SEC_PLAN_LONG, "pct")], second),
-            "%s paints the usage figures in its second color", name);
+      CHECK(third.kind == COLOR_RGB && figures_are(&cfg, third)
+            && !color_eq(third, cfg.sec[SEC_MODEL].fg)
+            && !color_eq(third, cfg.sec[SEC_CWD].fg),
+            "%s paints the usage figures in its third color", name);
     }
   }
 
   CHECK(i >= 2, "presets listed (%zu)", i);
+}
+
+// Every usage figure, in one color.
+static bool
+figures_are(const config_t *cfg, color_t want)
+{
+  return(color_eq(cfg->sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "used")], want)
+         && color_eq(cfg->sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "pct")], want)
+         && color_eq(cfg->sec[SEC_PLAN_SHORT].tok_fg[tok(SEC_PLAN_SHORT, "pct")], want)
+         && color_eq(cfg->sec[SEC_PLAN_LONG].tok_fg[tok(SEC_PLAN_LONG, "pct")], want));
+}
+
+static void
+test_palette(void)
+{
+  static const color_t nord_frost = { COLOR_RGB, 0x88, 0xc0, 0xd0 };
+  static const color_t nord_second = { COLOR_RGB, 0x81, 0xa1, 0xc1 };
+  config_t cfg, defaults, di, mono, tri;
+  const char *name;
+  size_t i;
+
+  config_defaults(&defaults);
+  CHECK(defaults.palette == PALETTE_TRITONE && !defaults.palette_pinned
+        && defaults.theme == 0, "tritone, unpinned, no theme by default");
+
+  for(i = 0; (name = config_theme_name(i)); i++)
+  {
+    const int tag = tok(SEC_MODEL, "model_tag"), effort = tok(SEC_MODEL, "effort");
+    color_t first, model;
+
+    config_defaults(&tri);
+    config_theme(&tri, sv_from_cstr(name));
+
+    // The palette first, then the theme, as --palette does; or the theme, then
+    // the palette laying it again: the same line either way.
+    config_defaults(&mono);
+    CHECK(config_palette(&mono, sv_from_cstr("monochrome")), "monochrome parses");
+    config_theme(&mono, sv_from_cstr(name));
+    config_defaults(&di);
+    config_theme(&di, sv_from_cstr(name));
+    CHECK(config_palette(&di, sv_from_cstr("duotone")), "duotone parses");
+    config_defaults(&cfg);
+    config_palette(&cfg, sv_from_cstr("duotone"));
+    config_theme(&cfg, sv_from_cstr(name));
+    CHECK(style_eq(&cfg, &di), "%s: duotone lays the same either side of the theme",
+          name);
+
+    // The pill sets no fill under any palette, so it takes the model's color.
+    first = tri.sec[SEC_CWD].fg;
+    model = tri.sec[SEC_MODEL].fg;
+    CHECK(color_eq(tri.sec[SEC_GIT].fg, first) && !color_eq(model, first),
+          "%s tritone: where and the model each in their own", name);
+    CHECK(color_eq(model, di.sec[SEC_MODEL].fg),
+          "%s: duotone and tritone share the model's color", name);
+    CHECK(color_eq(di.sec[SEC_CWD].fg, first) && color_eq(di.sec[SEC_GIT].fg, first)
+          && figures_are(&di, model) && di.sec[SEC_MODEL].tok_bg[tag].kind == COLOR_NONE,
+          "%s duotone: the figures in the model's color", name);
+
+    CHECK(color_eq(mono.sec[SEC_CWD].fg, first) && color_eq(mono.sec[SEC_GIT].fg, first)
+          && color_eq(mono.sec[SEC_MODEL].fg, first)
+          && mono.sec[SEC_MODEL].tok_bg[tag].kind == COLOR_NONE
+          && figures_are(&mono, first),
+          "%s monochrome: everything in the first color", name);
+
+    // The muted color and the pill's text are the theme's under every palette.
+    CHECK(color_eq(mono.sep_fg, tri.sep_fg) && color_eq(di.sep_fg, tri.sep_fg)
+          && color_eq(mono.sec[SEC_MODEL].tok_fg[effort], tri.sec[SEC_MODEL].tok_fg[effort])
+          && color_eq(di.sec[SEC_MODEL].tok_fg[effort], tri.sec[SEC_MODEL].tok_fg[effort])
+          && color_eq(mono.sec[SEC_CONTEXT].fg, tri.sec[SEC_CONTEXT].fg)
+          && color_eq(di.sec[SEC_PLAN_LONG].fg, tri.sec[SEC_PLAN_LONG].fg)
+          && color_eq(mono.sec[SEC_MODEL].tok_fg[tag], tri.sec[SEC_MODEL].tok_fg[tag])
+          && color_eq(di.sec[SEC_MODEL].tok_fg[tag], tri.sec[SEC_MODEL].tok_fg[tag]),
+          "%s keeps its muted color and the pill's text under every palette", name);
+
+    // Tritone laid again is the theme as it was.
+    CHECK(config_palette(&di, sv_from_cstr("tritone")) && style_eq(&di, &tri),
+          "%s: tritone after duotone is the theme again", name);
+  }
+
+  {
+    char ini[] = "[statusline]\npalette = duotone\ntheme = nord\n";
+
+    config_defaults(&cfg);
+    config_load(&cfg, ini, sizeof ini - 1);
+    CHECK(cfg.palette == PALETTE_DUOTONE && figures_are(&cfg, nord_second),
+          "palette before the theme line: nord lays the figures in its second color");
+  }
+
+  {
+    // Where it sits: keys between the theme line and it are painted over, keys
+    // after it win.
+    char ini[] =
+      "[statusline]\ntheme = nord\n"
+      "[cwd]\nfg = red\n"
+      "[statusline]\npalette = duotone\n"
+      "[git]\nfg = 208\n";
+
+    config_defaults(&cfg);
+    config_load(&cfg, ini, sizeof ini - 1);
+    CHECK(color_eq(cfg.sec[SEC_CWD].fg, nord_frost), "a key above the palette line loses");
+    CHECK(cfg.sec[SEC_GIT].fg.kind == COLOR_IDX256 && cfg.sec[SEC_GIT].fg.r == 208,
+          "a key after the palette line wins");
+    CHECK(figures_are(&cfg, nord_second), "nord's second on the figures");
+  }
+
+  {
+    char later[] = "[statusline]\ntheme = nord\npalette = duotone\npalette = monochrome\n";
+    char bad[] = "[statusline]\ntheme = nord\npalette = duotone\npalette = rainbow\n";
+    char ignored[] = "[statusline]\ntheme = nord\ntheme = gruvbox\npalette = duotone\n";
+    char alone[] = "[cwd]\nfg = red\n[statusline]\npalette = monochrome\n";
+    static const color_t red = { COLOR_NAMED16, 1, 0, 0 };
+    config_t want = defaults;
+
+    config_defaults(&cfg);
+    config_load(&cfg, later, sizeof later - 1);
+    CHECK(cfg.palette == PALETTE_MONOCHROME && figures_are(&cfg, nord_frost),
+          "a later palette wins");
+    config_defaults(&cfg);
+    config_load(&cfg, bad, sizeof bad - 1);
+    CHECK(cfg.palette == PALETTE_DUOTONE && figures_are(&cfg, nord_second),
+          "a bad palette keeps its value");
+    config_defaults(&cfg);
+    config_load(&cfg, ignored, sizeof ignored - 1);
+    CHECK(figures_are(&cfg, nord_second), "palette lays the theme that counted");
+    config_defaults(&cfg);
+    config_load(&cfg, alone, sizeof alone - 1);
+    want.sec[SEC_CWD].fg = red;
+    CHECK(!cfg.themed && cfg.palette == PALETTE_MONOCHROME && style_eq(&cfg, &want),
+          "a palette with no theme lays nothing, and the key above stands");
+  }
 }
 
 static void
@@ -595,6 +735,7 @@ main(void)
   test_cwd_shortening();
   test_profile();
   test_theme();
+  test_palette();
   test_path();
 
   return(check_failures ? 1 : 0);
