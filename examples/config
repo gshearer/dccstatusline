@@ -34,20 +34,21 @@
 [statusline]
 # A preset restyling colors only: catppuccin nord gruvbox tokyonight
 # dracula onedark rosepine kanagawa solarized. Unset by default: with no
-# theme the line wears the colors below, the terminal's own 16.
+# theme, or `theme = none`, the line wears the colors below, the terminal's
+# own 16.
 # `dccstatusline --themes` shows each one. The theme lands
 # where this line sits, so every key after it wins over the theme — keep
 # it first, and in a copy of this file delete the keys below that you
 # didn't change yourself, or they will paint over the theme.
 # theme = nord
-# tritone | duotone | monochrome, tritone by default: how many of the
-# theme's three colors the line wears beside its muted one. Tritone puts
-# the first on the cwd and branch, the second on the model and the third
-# on the figures, duotone gives the figures the model's, and monochrome
+# duotone | tritone | monochrome, duotone by default: how many of the
+# theme's three colors the line wears beside its muted one. Duotone puts
+# the first on the cwd and branch and the second on the model and the
+# figures, tritone gives the figures a third of their own, and monochrome
 # paints all of it in the first. It lays the theme again where this line
 # sits, so keep it right after `theme`. It takes a theme: with none, the
 # colors below stay as they are under any palette.
-# palette = duotone
+# palette = tritone
 # basic | detailed, unset by default. A profile is a whole line decided for
 # you: it replaces `sections` and every `format` below, wherever they sit,
 # and leaves the colors and everything else to this file. Both draw all six
@@ -66,7 +67,7 @@
 # own. On the command line, `--theme <name>`, `--palette <palette>`,
 # `--profile <name>` and `--glyphs on|off|nerdfont` stand in for these four
 # keys:
-# dccstatusline --theme nord --palette duotone --profile basic --glyphs on
+# dccstatusline --theme nord --palette tritone --profile basic --glyphs on
 # profile = basic
 # glyphs = on
 # Any subset, any order. A section with nothing to show vanishes,

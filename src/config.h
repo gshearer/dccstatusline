@@ -48,13 +48,13 @@ typedef enum
 } glyphs_t;
 
 // The palette key: how many of a preset's three colors the line wears
-// beside its muted one: all three, the first and second, or the first alone.
-// Tritone is the default. It takes a theme: with none, the line keeps its
-// stock colors under any palette.
+// beside its muted one: the first and second, all three, or the first alone.
+// Duotone is the default, the line every preset drew before palettes. It takes
+// a theme: with none, the line keeps its stock colors under any palette.
 typedef enum
 {
-  PALETTE_TRITONE = 0,
-  PALETTE_DUOTONE,
+  PALETTE_DUOTONE = 0,
+  PALETTE_TRITONE,
   PALETTE_MONOCHROME,
 } palette_t;
 
@@ -99,8 +99,9 @@ void config_load(config_t *, char *, size_t);
 
 // Lays a compiled-in preset's colors, and nothing else, in the palette the
 // palette key holds, as if its keys sat where the call happens, so later keys
-// still override it. False for an unknown name. `default`, v0.0.6's name for
-// the stock line, is no preset: it counts as the theme and lays nothing.
+// still override it. False for an unknown name. `none` names the stock line,
+// as `default` did in v0.0.6: no preset, it counts as the theme and lays
+// nothing.
 bool config_theme(config_t *, sv_t);
 
 // Sets the palette key from monochrome, duotone or tritone and lays the preset

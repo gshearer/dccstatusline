@@ -172,14 +172,15 @@ claude --plugin-dir ./plugin
 Then run `/dccstatusline:setup`. Ask for a change in plain words to exercise
 `configure`, including one it cannot express ("show my battery"), which it
 should decline rather than write. Run `/dccstatusline:theme` on its own to
-exercise the picker: step the palette row to `duotone`, and the usage figures
-take the model's color; step the glyphs row to `nerdfont`, and the
+exercise the picker: step the palette row to `tritone`, and the usage figures
+take a third color; step the glyphs row to `nerdfont`, and the
 preview draws the glyphs, or empty boxes without a Nerd
-Font. Move the theme row to `no theme`, and every row below it dims and reads
-`pick a theme` while the preview shows the stock line; step back to a preset,
-and the rows' choices return. Apply with a palette chosen on a preset, and the
-config gains `palette = …` right under `theme =`; apply on `no theme`, and the
-`theme` and `palette` lines go. Restart the session to pick up edits to a `SKILL.md` or
+Font. Move the theme row to `no theme`, and the palette row dims and reads
+`pick a theme` while the preview shows the stock line, which the other rows
+still change; step back to a preset, and the palette returns. Apply with a
+palette chosen on a preset, and the config gains `palette = …` right under
+`theme =`; apply on `no theme`, and the config reads `theme = none` with no
+`palette` line. Restart the session to pick up edits to a `SKILL.md` or
 script.
 
 To take the path users take instead, add the checkout as a marketplace:

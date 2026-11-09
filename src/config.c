@@ -592,8 +592,9 @@ config_theme(config_t *cfg, sv_t name)
 {
   size_t i;
 
-  // A v0.0.6 config, --print-config's own among them, may still name it.
-  if(sv_eq_cstr(name, "default"))
+  // The stock line by name; a v0.0.6 config, --print-config's own among them,
+  // may still call it default.
+  if(sv_eq_cstr(name, "none") || sv_eq_cstr(name, "default"))
   {
     cfg->themed = true;
 

@@ -46,7 +46,7 @@ zero forks, zero heap allocations, one write, exit 0.
 - 🌈 **themes** — `theme = nord`, or `--theme nord` on the command line,
   restyles the whole line: catppuccin, nord, gruvbox, tokyonight, dracula,
   onedark, rosepine, kanagawa, or solarized, in one, two or three of its
-  colors (`palette = duotone`); `dccstatusline --themes` prints
+  colors (`palette = tritone`); `dccstatusline --themes` prints
   them side by side, and `/dccstatusline:theme`, a Claude Code mod, picks one
   from a live preview
 - 🧩 **format templates** — reorder and repunctuate each section freely;
@@ -218,15 +218,15 @@ Nine presets ship in the binary — `catppuccin` (Mocha), `nord`, `gruvbox`
 three colors, a muted one and a background, and `[statusline] palette` decides
 how many of the three the line wears:
 
-- `tritone`, the default — the first for the directory and branch, the
-  second for the model, and the third for the usage figures
-- `duotone` — the same, with the usage figures in the model's color
+- `duotone`, the default — the first for the directory and branch, and the
+  second for the model and the usage figures
+- `tritone` — the same, with the usage figures in a third color of their own
 - `monochrome` — the first for all of it
 
 In every palette the theme's muted color paints the separator and the rest,
 and the model pill under `glyphs = nerdfont` fills with the model's color and
-writes on the theme's background. With no theme, the shipped default, the
-line keeps its stock colors, the ones in the screenshot: each section in its
+writes on the theme's background. With no theme, the shipped default and
+also `theme = none`, the line keeps its stock colors, the ones in the screenshot: each section in its
 own of your terminal's 16 colors over bright black, which no palette touches.
 A preset sets
 colors only: each keeps the default `│` separator and glyphs, and never
@@ -236,7 +236,7 @@ single key:
 ```ini
 [statusline]
 theme = nord
-palette = duotone                  # the figures in the model's blue
+palette = tritone                  # the figures in nord's deep blue
 
 [cwd]
 fg = red                           # keys after the theme line win over it
@@ -246,8 +246,8 @@ The preset applies where its line sits, so keep it first, and tweak it with
 keys below. A `palette` line lays the theme again where it sits, painting over
 any color key above it, so keep it right under `theme`. A config copied whole from `--print-config` restates every color
 and paints over any theme, so delete the color keys you didn't change.
-`dccstatusline --themes` prints every preset side by side, and
-`--themes "<ini>"` lays INI keys over each preset first. It has to be the
+`dccstatusline --themes` prints the stock line, as `none`, and every preset
+side by side, and `--themes "<ini>"` lays INI keys over each row first. It has to be the
 first argument and the flags below don't reach it, so a palette, a profile or
 glyphs go in the INI.
 
@@ -260,17 +260,16 @@ prints color codes raw inside one. The panel is a preview box over a row each
 for the theme, palette, separator, profile and glyphs, starting at what your
 config sets. Enter moves a row to its next value and redraws the preview, and
 Enter on the Apply button switches your status line to them. The palette row
-picks tritone, which writes no `palette` key, duotone or monochrome. The
+picks duotone, which writes no `palette` key, tritone or monochrome. The
 separator row includes a thin arrow, U+E0B1, that needs a Nerd Font. The
 profile row picks basic or detailed, and starts at basic when your config has
-no profile, so Apply on a preset always writes one in place of your own
+no profile, so Apply always writes one in place of your own
 `sections` and formats; to keep those, use `/dccstatusline:configure` instead.
 The glyphs row is the profile's `glyphs` key, off, on or nerdfont. The theme
-row starts at `no theme`, which is no theme but the way back to the stock
-line; Apply writes it as no `theme` key at all. Every row
-works on every preset. The options are a theme's, so on `no theme` the preview is the stock
-line and every row below the theme row dims, reads `pick a theme`, and keeps
-its value for when you step back to a preset. The presets use `#rrggbb` colors, so they look right only in a
+row's first stop is `no theme`, the way back to the stock line, which Apply
+writes as `theme = none`. The palette is a preset's alone, so on `no theme`
+its row dims, reads `pick a theme`, and keeps its value for when you step
+back to a preset; the other rows work on the stock line too. The presets use `#rrggbb` colors, so they look right only in a
 truecolor terminal. Where Claude Code doesn't load the mod, or the panel can't
 open, `/dccstatusline:theme` shows the `--themes` printout and asks with a menu
 instead.

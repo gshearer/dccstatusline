@@ -21,8 +21,8 @@ extern char **environ;
 static const char *dcc_bin;
 static const char *ref_path;
 
-static const char *const names[] =   // every preset, in the table's order
-  { "catppuccin", "nord", "gruvbox", "tokyonight", "dracula",
+static const char *const names[] =   // --themes' rows: the stock line, then every preset
+  { "none", "catppuccin", "nord", "gruvbox", "tokyonight", "dracula",
     "onedark", "rosepine", "kanagawa", "solarized" };
 
 static bool run_bin(const char *const *, const char *, size_t, char *, size_t,
@@ -314,8 +314,8 @@ test_reference_is_default(void)
         (int)rn, ref, (int)dn, dflt);
 }
 
-// --themes is what the plugin's theme skill reads the preset names from, one
-// per line, name first.
+// --themes is what the plugin's theme skill reads the theme names from, one
+// per line, name first, the stock line's none ahead of the presets.
 static void
 test_themes(void)
 {
@@ -339,11 +339,11 @@ test_themes(void)
     pos = (size_t)(eol - out) + 1;
   }
 
-  CHECK(pos == n, "--themes: one line per preset, nothing after");
+  CHECK(pos == n, "--themes: one line per theme, nothing after");
 }
 
 // An overlay is the plugin picker's preview of its options, laid over every
-// preset as keys below a theme line are.
+// row, the stock line's too, as keys below a theme line are.
 static void
 test_themes_overlay(void)
 {
@@ -420,7 +420,8 @@ styles(const char *line, size_t n)
 }
 
 // A palette overlay lays every preset again in it: the muted color and one,
-// two or three of the preset's own.
+// two or three of the preset's own. The stock line takes no palette, so its
+// row reads the same under each.
 static void
 test_themes_palette(void)
 {
@@ -434,8 +435,8 @@ test_themes_palette(void)
     { "[statusline]\npalette = duotone\n",    3 },
     { "[statusline]\npalette = tritone\n",    4 },
   };
-  char out[16 * 1024], err[256];
-  size_t p, n = 0, en = 0;
+  char out[16 * 1024], err[256], stock[2048];
+  size_t p, n = 0, en = 0, sn = 0;
 
   for(p = 0; p < sizeof palettes / sizeof palettes[0]; p++)
   {
@@ -454,9 +455,17 @@ test_themes_palette(void)
       const size_t end = eol ? (size_t)(eol - out) : n;
       const size_t want = palettes[p].styles;
 
-      CHECK(styles(out + pos, end - pos) == want,
-            "--themes %.*s: %s paints %zu styles, want %zu", pl, palette, names[lines],
-            styles(out + pos, end - pos), want);
+      if(lines == 0 && p == 0 && end - pos <= sizeof stock)
+        memcpy(stock, out + pos, sn = end - pos);
+
+      if(lines == 0)
+        CHECK(sn && end - pos == sn && memcmp(out + pos, stock, sn) == 0,
+              "--themes %.*s: the stock line as under the first palette", pl, palette);
+
+      else
+        CHECK(styles(out + pos, end - pos) == want,
+              "--themes %.*s: %s paints %zu styles, want %zu", pl, palette, names[lines],
+              styles(out + pos, end - pos), want);
 
       pos = end + 1;
     }

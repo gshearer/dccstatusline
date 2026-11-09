@@ -10,22 +10,24 @@ import type { Choices, Preset, Span } from '../types'
 
 const PANE = 'theme-picker'
 const SKILL = 'dccstatusline:theme'
-const NO_THEME = 'no theme'   // the theme row's first stop: the stock line, no preset
+const NONE = 'none'   // --themes' first row: the stock line, no preset
+
+// The theme row reads none as what it is.
+const shown = (theme: string) => (theme === NONE ? 'no theme' : theme)
 
 const picker = atom({ plugin: 'dccstatusline', key: 'picker' } as const, null, {
-  shape: 'picker-6',
+  shape: 'picker-7',
 })
 
 // Each option starts at the value whose INI the config holds, and Enter moves
 // it to its next value, round to the first: the default, which writes nothing.
 // Any other value is the INI the skill writes below the theme line, and
-// --themes lays it over every preset to preview it. The profile is always one
+// --themes lays it over every row to preview it. The profile is always one
 // of its own, with no default: basic until the config holds detailed, so every
-// pick on a preset names it. Every option is a theme's: no theme is no preset
-// but the stock line in the terminal's own 16 colors, which a plain run on no
-// config draws, so there every row waits, see waits. The palette is how many of a
-// preset's three colors the line wears beside its muted one: three, two or
-// one. The glyphs are the profile's: on puts ⎇ before the branch and, under
+// pick names it. The palette is how many of a preset's three colors the line
+// wears beside its muted one: two, three or one. It is a preset's alone, so on
+// no theme, the stock line in the terminal's own 16 colors, it waits, see
+// waits. The glyphs are the profile's: on puts ⎇ before the branch and, under
 // detailed, ↻ before both reset times, and nerdfont puts U+E0A0 and U+F021 in
 // their place and the model in a pill between U+E0B6 and U+E0B4.
 // U+E0B1 is the Nerd Font thin arrow, an escape since most editors can't show it. A missing font shows up here first,
@@ -34,8 +36,9 @@ const OPTIONS = [
   {
     name: 'palette',
     label: 'Palette',
-    values: ['tritone', 'duotone', 'monochrome'],
+    values: ['duotone', 'tritone', 'monochrome'],
     ini: (v: string) => `[statusline]\npalette = ${v}\n`,
+    preset: true,
   },
   {
     name: 'sep',
@@ -58,12 +61,12 @@ const OPTIONS = [
   },
 ]
 
-// What the options wait for, or nothing while they are live. No option does
-// anything under no theme, so there each waits: it is drawn dim, reading what
-// it waits for, Enter on it does nothing, and it is neither sent nor named. It
-// keeps its choice for when a preset comes back. --themes draws the presets
-// alone, every one at once, so it never waits.
-const waits = (theme: string) => (theme === NO_THEME ? 'pick a theme' : undefined)
+// What an option waits for, or nothing while it is live. A preset's option does
+// nothing on no theme, so there it waits: it is drawn dim, reading what it
+// waits for, Enter on it does nothing, and it is neither sent nor named. It
+// keeps its choice for when a preset comes back.
+const waits = (o: (typeof OPTIONS)[number], theme: string) =>
+  o.preset && theme === NONE ? 'pick a theme' : undefined
 
 // A private-use glyph goes to the skill by its code point. Claude can't see the
 // character in tool output, so sent raw it would look like an empty `sep=`.
@@ -100,9 +103,9 @@ function style(params: string) {
 const spans = (line: string): Span[] =>
   [...line.matchAll(SGR)].filter(s => s[2]).map(s => ({ text: s[2]!, ...style(s[1]!) }))
 
-// --themes: one preset a line, its name, some padding, then the sample line. A
-// binary that predates themes prints its one fallback line, which names
-// nothing.
+// --themes: one theme a line, none first, its name, some padding, then the
+// sample line. A binary that predates themes prints its one fallback line,
+// which names nothing.
 export function parse(stdout: string): Preset[] {
   const presets: Preset[] = []
 
@@ -113,43 +116,6 @@ export function parse(stdout: string): Preset[] {
   }
 
   return presets
-}
-
-// A plain run: the line alone, with no name before it.
-export function parseStock(stdout: string): Span[] {
-  return spans(stdout.split('\n')[0] ?? '')
-}
-
-// --themes' sample as a payload, for a plain run to draw the stock line on:
-// print_themes in src/main.c holds the same, and a change to one goes to the
-// other. Each reset stands 30 seconds past the sample's, so the countdowns read
-// as --themes' do while the run takes less. The sample's repository is fixed in
-// the binary, out of a payload's reach, so the stock line shows no branch.
-export function stockPayload(now: number): string {
-  return JSON.stringify({
-    cwd: '~/src/acme',
-    model: { id: 'claude-opus-5-5', display_name: 'Opus' },
-    effort: { level: 'high' },
-    context_window: { total_input_tokens: 87333, context_window_size: 200000 },
-    rate_limits: {
-      five_hour: { used_percentage: 24, resets_at: now + 9000 + 30 },
-      seven_day: { used_percentage: 41, resets_at: now + 302400 + 30 },
-    },
-  })
-}
-
-// The stock line: the binary run as the status line runs it, on stockPayload,
-// with /dev/null for its config so none of the user's keys paint over it. It
-// runs at /, where the sample's relative cwd names no repository.
-async function drawStock($: EngineInterface, bin: string): Promise<Span[]> {
-  const ran = await $.process.run([bin], {
-    cwd: '/',
-    env: { DCCSTATUSLINE_CONFIG: '/dev/null' },
-    stdin: stockPayload(Math.floor(Date.now() / 1000)),
-    timeoutMs: 5000,
-  })
-
-  return parseStock(ran.stdout)
 }
 
 // The configure skill's step 0, cut short: what the status line runs, if that
@@ -190,7 +156,7 @@ function keys(ini: string): Map<string, string> {
 
 // The configure skill's step 1: the theme the config names, and the value of
 // each option whose INI it holds whole, a default aside, which has none. No
-// theme line is no theme, and so is default, v0.0.6's name for the stock line,
+// theme line is none, and so is default, v0.0.6's name for the stock line,
 // which its reference config wrote.
 async function inUse($: EngineInterface): Promise<{ current: string; held: Choices }> {
   const home = (await $.env.get('HOME')) ?? ''
@@ -210,7 +176,7 @@ async function inUse($: EngineInterface): Promise<{ current: string; held: Choic
 
   const named = /^[ \t]*theme[ \t]*=[ \t]*"?([a-z0-9]+)/m.exec(ini)?.[1]
 
-  return { current: named === undefined || named === 'default' ? NO_THEME : named, held }
+  return { current: named === undefined || named === 'default' ? NONE : named, held }
 }
 
 // Every row as --themes draws it with the chosen options laid over, so the
@@ -224,10 +190,8 @@ async function draw($: EngineInterface, bin: string, choices: Choices): Promise<
   return parse(ran.stdout)
 }
 
-// Finds the binary, runs --themes and the stock line, and opens the picker on
-// what they draw. False when any of that fails, as with a binary that predates
-// themes. The stock line is drawn once: under no theme the options wait, so
-// nothing changes it.
+// Finds the binary, runs --themes and opens the picker on what it lists.
+// False when any of that fails, as with a binary that predates themes.
 async function openPicker($: EngineInterface): Promise<boolean> {
   const bin = await findBin($)
 
@@ -236,25 +200,23 @@ async function openPicker($: EngineInterface): Promise<boolean> {
   const { current, held } = await inUse($)
   const choices: Choices = { ...held }
   let presets: Preset[]
-  let stock: Span[]
 
   // An option with no default starts at its first value, and is drawn there.
   for (const o of OPTIONS) if (o.always) choices[o.name] ??= o.values[0]!
 
   try {
     presets = await draw($, bin, choices)
-
-    if (presets.length === 0) return false
-
-    stock = await drawStock($, bin)
   } catch {
     return false
   }
 
-  // No theme, or one this binary doesn't list: the row starts at no theme.
-  const theme = presets.some(p => p.name === current) ? current : NO_THEME
+  if (presets.length === 0) return false
 
-  await update($, picker, () => ({ bin, current, held, theme, choices, presets, stock }))
+  // A config can name a theme this binary doesn't list: the row starts at the
+  // first, none.
+  const theme = presets.some(p => p.name === current) ? current : presets[0]!.name
+
+  await update($, picker, () => ({ bin, current, held, theme, choices, presets }))
 
   const opened = await $.ui.open({
     id: PANE,
@@ -292,37 +254,30 @@ export const register: Register = on => {
     if (!state) return <Text dimColor>No themes loaded.</Text>
 
     const { bin, held, theme, choices } = state
-    const wait = waits(theme)
 
-    // Apply runs the theme skill again with the theme, none for no theme, and
-    // each option that is set or that the config held, so one moved back to its
-    // first value is named too, as if the person had typed them, and the skill
-    // writes the config. A waiting option goes unnamed, so none goes alone.
+    // Apply runs the theme skill again with the theme and each option that is
+    // set or that the config held, so one moved back to its first value is
+    // named too, as if the person had typed them, and the skill writes the
+    // config. A waiting option goes unnamed.
     const apply = async () => {
-      const named = wait ? [] : OPTIONS.filter(o => choices[o.name] || held[o.name])
-      const args = [
-        theme === NO_THEME ? 'none' : theme,
-        ...named.map(o => `${o.name}=${spell(choices[o.name] ?? o.values[0]!)}`),
-      ]
+      const named = OPTIONS.filter(o => (choices[o.name] || held[o.name]) && !waits(o, theme))
+      const args = [theme, ...named.map(o => `${o.name}=${spell(choices[o.name] ?? o.values[0]!)}`)]
 
       await $.ui.close({ id: PANE })
       await $.command.run({ command: SKILL, args: args.join(' ') }).catch(err => {
-        $.ui.toast(`Couldn't apply ${theme}: ${String(err)}`)
+        $.ui.toast(`Couldn't apply ${shown(theme)}: ${String(err)}`)
       })
     }
 
-    // No theme, then every preset, round to no theme again.
+    // Down --themes' rows, none first, and round again.
     const nextTheme = () =>
-      update($, picker, s => {
-        if (!s) return s
-
-        const names = [NO_THEME, ...s.presets.map(p => p.name)]
-
-        return { ...s, theme: names[(names.indexOf(s.theme) + 1) % names.length]! }
+      update($, picker, s => s && {
+        ...s,
+        theme: s.presets[(s.presets.findIndex(p => p.name === s.theme) + 1) % s.presets.length]!.name,
       })
 
     const change = async (o: (typeof OPTIONS)[number]) => {
-      if (wait) return
+      if (waits(o, theme)) return
 
       // Past the last value: the default, which is no choice, or for an option
       // with none, the first again.
@@ -338,20 +293,19 @@ export const register: Register = on => {
     }
 
     const rows = [
-      { key: 'theme', label: 'Theme', value: theme, onPress: nextTheme, dim: undefined },
+      { key: 'theme', label: 'Theme', value: shown(theme), onPress: nextTheme, dim: undefined },
       ...OPTIONS.map(o => ({
         key: o.name,
         label: o.label,
-        value: wait ?? choices[o.name] ?? o.values[0]!,
+        value: waits(o, theme) ?? choices[o.name] ?? o.values[0]!,
         onPress: () => change(o),
-        dim: wait !== undefined || undefined,
+        dim: waits(o, theme) !== undefined || undefined,
       })),
     ]
 
     // Values line up past the longest label.
     const column = Math.max(...rows.map(r => r.label.length)) + 2
-    const sample =
-      theme === NO_THEME ? state.stock : (state.presets.find(p => p.name === theme)?.spans ?? [])
+    const sample = state.presets.find(p => p.name === theme)?.spans ?? []
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -387,7 +341,7 @@ export const register: Register = on => {
           Apply
         </Button>
         <Text dimColor>
-          ↑↓ move · Enter changes a row or applies · Esc cancels · in use: {state.current}
+          ↑↓ move · Enter changes a row or applies · Esc cancels · in use: {shown(state.current)}
         </Text>
       </Box>
     )

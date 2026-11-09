@@ -500,12 +500,17 @@ test_theme(void)
   }
 
   {
-    // default, v0.0.6's name for the stock line, is no preset: it counts as
-    // the theme, so a later one yields, and it lays nothing.
-    char ini[] = "[statusline]\ntheme = default\ntheme = nord\n";
+    // none names the stock line, and default, its v0.0.6 name, still does. No
+    // preset: each counts as the theme, so a later one yields, and lays nothing.
+    char none[] = "[statusline]\ntheme = none\ntheme = nord\n";
+    char old[] = "[statusline]\ntheme = default\ntheme = nord\n";
 
     config_defaults(&cfg);
-    config_load(&cfg, ini, sizeof ini - 1);
+    config_load(&cfg, none, sizeof none - 1);
+    CHECK(cfg.themed && cfg.theme == 0 && style_eq(&cfg, &defaults),
+          "none keeps the stock line, and the theme after it yields");
+    config_defaults(&cfg);
+    config_load(&cfg, old, sizeof old - 1);
     CHECK(cfg.themed && cfg.theme == 0 && style_eq(&cfg, &defaults),
           "default keeps the stock line, and the theme after it yields");
   }
@@ -559,15 +564,20 @@ test_theme(void)
           && cfg.sec[SEC_MODEL].tok_bg[tok(SEC_MODEL, "effort_plain")].kind == COLOR_NONE,
           "%s fills the model pill and only the pill", name);
 
-    // The usage figures wear a third color, neither the model's nor where
-    // you are. Each needs its own key, or another preset's figures show through.
+    // By default the usage figures wear the model's color, as every preset
+    // drew them before palettes; under tritone a third, neither the model's
+    // nor where you are. Each needs its own key, or another preset's figures
+    // show through.
     {
-      const color_t third = cfg.sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "pct")];
+      const color_t model = cfg.sec[SEC_MODEL].fg;
+      color_t third;
 
+      CHECK(figures_are(&cfg, model), "%s paints the figures in the model's color", name);
+      CHECK(config_palette(&cfg, sv_from_cstr("tritone")), "tritone parses");
+      third = cfg.sec[SEC_CONTEXT].tok_fg[tok(SEC_CONTEXT, "pct")];
       CHECK(third.kind == COLOR_RGB && figures_are(&cfg, third)
-            && !color_eq(third, cfg.sec[SEC_MODEL].fg)
-            && !color_eq(third, cfg.sec[SEC_CWD].fg),
-            "%s paints the usage figures in its third color", name);
+            && !color_eq(third, model) && !color_eq(third, cfg.sec[SEC_CWD].fg),
+            "%s tritone paints the usage figures in its third color", name);
     }
   }
 
@@ -594,8 +604,8 @@ test_palette(void)
   size_t i;
 
   config_defaults(&defaults);
-  CHECK(defaults.palette == PALETTE_TRITONE && !defaults.palette_pinned
-        && defaults.theme == 0, "tritone, unpinned, no theme by default");
+  CHECK(defaults.palette == PALETTE_DUOTONE && !defaults.palette_pinned
+        && defaults.theme == 0, "duotone, unpinned, no theme by default");
 
   for(i = 0; (name = config_theme_name(i)); i++)
   {
@@ -603,6 +613,7 @@ test_palette(void)
     color_t first, model;
 
     config_defaults(&tri);
+    CHECK(config_palette(&tri, sv_from_cstr("tritone")), "tritone parses");
     config_theme(&tri, sv_from_cstr(name));
 
     // The palette first, then the theme, as --palette does; or the theme, then
@@ -618,6 +629,9 @@ test_palette(void)
     config_theme(&cfg, sv_from_cstr(name));
     CHECK(style_eq(&cfg, &di), "%s: duotone lays the same either side of the theme",
           name);
+    config_defaults(&cfg);
+    config_theme(&cfg, sv_from_cstr(name));
+    CHECK(style_eq(&cfg, &di), "%s: no palette key is duotone", name);
 
     // The pill sets no fill under any palette, so it takes the model's color.
     first = tri.sec[SEC_CWD].fg;

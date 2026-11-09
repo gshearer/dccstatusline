@@ -96,17 +96,15 @@ want_git(const config_t *cfg)
   return(false);
 }
 
-// Every preset over the stock line, one sample line each, labeled with its
-// name, so they can be compared side by side. The user's config stays out of
-// it: this shows the themes as shipped, with only the overlay on top — INI text
-// laid over each preset as if it sat below the theme line. The name is the
-// table's own, so it always lays and counts as the theme, and a theme key in the
-// overlay yields as it would below a theme line. A palette key in the overlay
-// lays the preset again in it. No theme is no preset and has no row: the plugin
-// picker draws it with a plain run of the same sample, as a payload in
-// plugin/hooks/register.tsx, so a change to the sample here goes there too. The
-// clock is fixed too — the countdowns measure against the same instant the
-// sample resets were built from.
+// The stock line, then every preset over it, one sample line each, labeled
+// with its name, so they can be compared side by side. The user's config stays
+// out of it: this shows the themes as shipped, with only the overlay on top —
+// INI text laid over each row as if it sat below the theme line. Every name
+// counts as the theme, none included, so a theme key in the overlay yields as
+// it would below a theme line. A palette key in the overlay lays each preset
+// again in it, and leaves the stock line as it is. The clock is fixed too —
+// the countdowns measure against the same instant the sample resets were built
+// from.
 static bool
 print_themes(const char *overlay)
 {
@@ -135,7 +133,7 @@ print_themes(const char *overlay)
 
   if(on > sizeof config_buf) return(false);
 
-  for(i = 0; (name = config_theme_name(i)); i++)
+  for(i = 0; (name = i ? config_theme_name(i - 1) : "none"); i++)
   {
     config_t cfg;
     sbuf_t line;

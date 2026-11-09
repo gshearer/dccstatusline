@@ -94,8 +94,8 @@ bad value means that key keeps its default (one stderr note, visible in `claude 
 
 INI dialect: `[section]`, `key = value`, `#` comments, quoted values for significant
 whitespace (`separator = " │ "`), UTF-8 passed through as bytes, unknown sections and
-keys ignored (forward compatibility). `[statusline]` holds `theme` (a preset), `palette`
-(`monochrome`, `duotone` or `tritone`, tritone by default), `profile` (`basic` or
+keys ignored (forward compatibility). `[statusline]` holds `theme` (a preset, or `none`), `palette`
+(`monochrome`, `duotone` or `tritone`, duotone by default), `profile` (`basic` or
 `detailed`, unset by default), `glyphs` (`off`, `on` or `nerdfont`, a profile's, off by
 default), `sections` (order list), `separator` (+ `separator_fg/bg`), `thousands`.
 
@@ -106,10 +106,11 @@ literals, and the background is the one dark text, which `{model_tag}` writes on
 model's color (an unset pill `bg` falls back to the section's `fg`). Each preset keeps
 its own muted color, and some aren't gray. `palette` decides how many of the three the
 line wears: `monochrome` paints the model and the figures in the first, `duotone` both in
-the second, `tritone` each in its own. With no theme the line is `config_defaults`'
-own, each section in its own of the terminal's 16 colors over bright_black, and no palette
-touches it. `theme = default`, v0.0.6's name for that line, still counts as the theme and
-lays nothing.
+the second, `tritone` each in its own. Duotone is the default because it is the line every
+preset drew before palettes existed, so an upgrade changes no one's colors. With no theme
+the line is `config_defaults`' own, each section in its own of the terminal's 16 colors
+over bright_black, and no palette touches it. `theme = none` names that line, and
+`default`, its v0.0.6 name, still does: either counts as the theme and lays nothing.
 `lay` writes a preset into `config_t` in the palette the config holds, and touches only
 the colors a preset owns: `separator_fg`, the cwd, git and model `fg`, `effort_fg`,
 `model_tag_fg`, the context and plan `fg`, `used_fg` and every `pct_fg`. `theme = name`
@@ -117,19 +118,16 @@ lays it at the line where it sits, so keys after it override the preset and keys
 it are overridden. Only the first `theme` key naming a known preset counts. `palette`
 follows the same rule: it records the palette and lays the preset in force again where
 its line sits, nothing with no theme, so it paints over any color key between the two.
-The theme skill writes it on the line right after `theme`. `--themes` renders every
-preset over the defaults, each labeled with its name, with a fixed sample payload and
+The theme skill writes it on the line right after `theme`. `--themes` renders the stock
+line as `none`, then every preset over the defaults, each labeled with its name, with a fixed sample payload and
 clock, ignoring the user's config, so it shows the presets as shipped. An optional second argument is INI text laid
-over each preset as if it sat below the theme line, which is how the plugin's picker
+over each row as if it sat below the theme line, which is how the plugin's picker
 previews its palette, separator, glyphs and profile options; a `palette` key there lays
-each preset again in it. It
+each preset again in it and leaves the stock row alone. One run thus previews every stop
+of the picker's theme row, `no theme` included, on the same sample. It
 borrows the config buffer, unused on that path, and is copied in afresh per
-preset. One too big for that buffer exits 1, which the contract above allows: `--themes`
-is not the status line's path. No theme is no preset, so `--themes` has no row for it.
-The picker previews its `no theme` stop with a plain run instead: the same sample as
-a payload, `/dev/null` for the config, from `/` so no repository answers, and so no
-branch, since the sample's fixed repository is out of a payload's reach. It takes no
-INI, since the picker's options are a theme's and wait for one there. The picker's pick names a private-use separator by code
+row. One too big for that buffer exits 1, which the contract above allows: `--themes`
+is not the status line's path. The picker's pick names a private-use separator by code
 point (`sep=U+E0B1`): the skill that writes the config is Claude, which can't see the
 character in tool output.
 

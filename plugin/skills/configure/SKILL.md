@@ -87,9 +87,9 @@ its bytes from the shell, `printf '\356\202\261'`. It needs a Nerd Font, so ask
 about the font first.
 
 `[statusline] palette = monochrome|duotone|tritone` decides how many of the
-theme's three colors the line wears beside its muted color: all three, with
-the third on the usage figures (`tritone`, the default), the first and second,
-or the first alone.
+theme's three colors the line wears beside its muted color: the first and
+second, with the usage figures in the model's color (`duotone`, the default),
+all three, with the third on the figures (`tritone`), or the first alone.
 It lays the theme again where its line sits, so it paints over any color key
 between it and `theme`. Keep it on the line right after `theme =`, with the
 color keys the user asks for below it. With no theme it does nothing: the
