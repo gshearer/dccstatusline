@@ -47,6 +47,17 @@ typedef enum
   GLYPHS_NERDFONT,
 } glyphs_t;
 
+// The palette key: how many of a preset's three colors the line wears
+// beside its muted one: all three, the first and second, or the first alone.
+// Tritone is the default. It takes a theme: with none, the line keeps its
+// stock colors under any palette.
+typedef enum
+{
+  PALETTE_TRITONE = 0,
+  PALETTE_DUOTONE,
+  PALETTE_MONOCHROME,
+} palette_t;
+
 typedef struct
 {
   sv_t format;
@@ -69,24 +80,33 @@ typedef struct
   uint16_t cwd_max_len;    // codepoint budget for the rendered path; 0 = off
   bool themed;             // a theme key has been applied; the first one wins
   bool theme_pinned;       // --theme set it: the config's theme key yields quietly
+  uint8_t theme;           // 1 + the preset laid last; 0, no theme, until one is
+  palette_t palette;       // how a preset lays its colors; see config_palette
+  bool palette_pinned;     // --palette set it: the config's palette key yields quietly
   profile_t profile;       // applied after the whole load; see config_load
   glyphs_t glyphs;         // a profile's ⎇, ↻ and model pill; nothing without one
   section_cfg_t sec[SEC_COUNT];
 } config_t;
 
-// Defaults are the shipped theme — identical to examples/config. config_load
-// overlays an INI buffer onto them per key: an unparseable value keeps that
-// key's default (one stderr note), unknown sections and keys are ignored.
-// A profile key, and the glyphs key with it, is applied after the whole
-// buffer, so it wins wherever the sections and format keys sit. Views alias
-// the config buffer, which must outlive the render.
+// Defaults are the stock line, with no theme — identical to examples/config.
+// config_load overlays an INI buffer onto them per key: an unparseable value
+// keeps that key's default (one stderr note), unknown sections and keys are
+// ignored. A profile key, and the glyphs key with it, is applied after the
+// whole buffer, so it wins wherever the sections and format keys sit. Views
+// alias the config buffer, which must outlive the render.
 void config_defaults(config_t *);
 void config_load(config_t *, char *, size_t);
 
-// Overlays a compiled-in preset — colors only — as if its INI text
-// sat where the call happens, so later keys still override it. False for an
-// unknown name. Colors are copied by value, so no view outlives the call.
+// Lays a compiled-in preset's colors, and nothing else, in the palette the
+// palette key holds, as if its keys sat where the call happens, so later keys
+// still override it. False for an unknown name. `default`, v0.0.6's name for
+// the stock line, is no preset: it counts as the theme and lays nothing.
 bool config_theme(config_t *, sv_t);
+
+// Sets the palette key from monochrome, duotone or tritone and lays the preset
+// in force again in it. With no theme it lays nothing: the stock colors take
+// no palette. False for anything else, leaving the config untouched.
+bool config_palette(config_t *, sv_t);
 
 // Sets the named profile and applies it now, over whatever the config loaded.
 // False for an unknown name, leaving the config untouched.
@@ -110,209 +130,35 @@ bool config_path(char *, size_t);
 typedef struct
 {
   const char *name;
-  const char *ini;
+  color_t first, second, third, muted, base;
 } theme_t;
 
-// Each preset paints the line in two colors of its palette and one gray: the
-// first for where you are (cwd and branch), the second for the model and every
-// usage figure, and the gray for the separator and all literals. {model_tag}
-// sets no fill, so it fills with the second color as the model's fg, and
-// writes on the palette's background, the one dark text on the line.
+#define RGB(v) { COLOR_RGB, ((v) >> 16) & 255, ((v) >> 8) & 255, (v) & 255 }
+
+// Each preset is five colors: the first for where you are (cwd and branch), the
+// second for the model, the third for every usage figure, its muted color for
+// the separator and all literals, and its background, the one dark text on the
+// line: {model_tag} sets no fill, so it fills with the model's color, and
+// writes in the background. The palette key decides how many of the three the
+// line wears: monochrome paints the model and the figures in the first, duotone
+// both in the second, and tritone each in its own. With no theme the line is
+// config_defaults' own, in the terminal's 16 colors, which no palette touches.
 // Never the separator, a format, the profile, sections, cwd shortening, or
 // resets — a theme recolors the line, it does not rewrite or rearrange it.
 static const theme_t themes[] =
 {
-  { "default", "" },
-  { "catppuccin",
-    "[statusline]\n"
-    "separator_fg = #7f849c\n"
-    "[cwd]\n"
-    "fg = #cba6f7\n"
-    "[git]\n"
-    "fg = #cba6f7\n"
-    "[model]\n"
-    "fg = #89b4fa\n"
-    "effort_fg = #7f849c\n"
-    "model_tag_fg = #1e1e2e\n"
-    "[context]\n"
-    "fg = #7f849c\n"
-    "used_fg = #89b4fa\n"
-    "pct_fg = #89b4fa\n"
-    "[plan_short]\n"
-    "fg = #7f849c\n"
-    "pct_fg = #89b4fa\n"
-    "[plan_long]\n"
-    "fg = #7f849c\n"
-    "pct_fg = #89b4fa\n" },
-  { "nord",
-    "[statusline]\n"
-    "separator_fg = #616e88\n"
-    "[cwd]\n"
-    "fg = #88c0d0\n"
-    "[git]\n"
-    "fg = #88c0d0\n"
-    "[model]\n"
-    "fg = #81a1c1\n"
-    "effort_fg = #616e88\n"
-    "model_tag_fg = #2e3440\n"
-    "[context]\n"
-    "fg = #616e88\n"
-    "used_fg = #81a1c1\n"
-    "pct_fg = #81a1c1\n"
-    "[plan_short]\n"
-    "fg = #616e88\n"
-    "pct_fg = #81a1c1\n"
-    "[plan_long]\n"
-    "fg = #616e88\n"
-    "pct_fg = #81a1c1\n" },
-  { "gruvbox",
-    "[statusline]\n"
-    "separator_fg = #928374\n"
-    "[cwd]\n"
-    "fg = #fabd2f\n"
-    "[git]\n"
-    "fg = #fabd2f\n"
-    "[model]\n"
-    "fg = #8ec07c\n"
-    "effort_fg = #928374\n"
-    "model_tag_fg = #282828\n"
-    "[context]\n"
-    "fg = #928374\n"
-    "used_fg = #8ec07c\n"
-    "pct_fg = #8ec07c\n"
-    "[plan_short]\n"
-    "fg = #928374\n"
-    "pct_fg = #8ec07c\n"
-    "[plan_long]\n"
-    "fg = #928374\n"
-    "pct_fg = #8ec07c\n" },
-  { "tokyonight",
-    "[statusline]\n"
-    "separator_fg = #737aa2\n"
-    "[cwd]\n"
-    "fg = #7aa2f7\n"
-    "[git]\n"
-    "fg = #7aa2f7\n"
-    "[model]\n"
-    "fg = #bb9af7\n"
-    "effort_fg = #737aa2\n"
-    "model_tag_fg = #1a1b26\n"
-    "[context]\n"
-    "fg = #737aa2\n"
-    "used_fg = #bb9af7\n"
-    "pct_fg = #bb9af7\n"
-    "[plan_short]\n"
-    "fg = #737aa2\n"
-    "pct_fg = #bb9af7\n"
-    "[plan_long]\n"
-    "fg = #737aa2\n"
-    "pct_fg = #bb9af7\n" },
-  { "dracula",
-    "[statusline]\n"
-    "separator_fg = #6272a4\n"
-    "[cwd]\n"
-    "fg = #bd93f9\n"
-    "[git]\n"
-    "fg = #bd93f9\n"
-    "[model]\n"
-    "fg = #ff79c6\n"
-    "effort_fg = #6272a4\n"
-    "model_tag_fg = #282a36\n"
-    "[context]\n"
-    "fg = #6272a4\n"
-    "used_fg = #ff79c6\n"
-    "pct_fg = #ff79c6\n"
-    "[plan_short]\n"
-    "fg = #6272a4\n"
-    "pct_fg = #ff79c6\n"
-    "[plan_long]\n"
-    "fg = #6272a4\n"
-    "pct_fg = #ff79c6\n" },
-  { "onedark",
-    "[statusline]\n"
-    "separator_fg = #767676\n"
-    "[cwd]\n"
-    "fg = #61afef\n"
-    "[git]\n"
-    "fg = #61afef\n"
-    "[model]\n"
-    "fg = #c678dd\n"
-    "effort_fg = #767676\n"
-    "model_tag_fg = #282c34\n"
-    "[context]\n"
-    "fg = #767676\n"
-    "used_fg = #c678dd\n"
-    "pct_fg = #c678dd\n"
-    "[plan_short]\n"
-    "fg = #767676\n"
-    "pct_fg = #c678dd\n"
-    "[plan_long]\n"
-    "fg = #767676\n"
-    "pct_fg = #c678dd\n" },
-  { "rosepine",
-    "[statusline]\n"
-    "separator_fg = #6e6a86\n"
-    "[cwd]\n"
-    "fg = #ebbcba\n"
-    "[git]\n"
-    "fg = #ebbcba\n"
-    "[model]\n"
-    "fg = #c4a7e7\n"
-    "effort_fg = #6e6a86\n"
-    "model_tag_fg = #191724\n"
-    "[context]\n"
-    "fg = #6e6a86\n"
-    "used_fg = #c4a7e7\n"
-    "pct_fg = #c4a7e7\n"
-    "[plan_short]\n"
-    "fg = #6e6a86\n"
-    "pct_fg = #c4a7e7\n"
-    "[plan_long]\n"
-    "fg = #6e6a86\n"
-    "pct_fg = #c4a7e7\n" },
-  { "kanagawa",
-    "[statusline]\n"
-    "separator_fg = #727169\n"
-    "[cwd]\n"
-    "fg = #7e9cd8\n"
-    "[git]\n"
-    "fg = #7e9cd8\n"
-    "[model]\n"
-    "fg = #957fb8\n"
-    "effort_fg = #727169\n"
-    "model_tag_fg = #1f1f28\n"
-    "[context]\n"
-    "fg = #727169\n"
-    "used_fg = #957fb8\n"
-    "pct_fg = #957fb8\n"
-    "[plan_short]\n"
-    "fg = #727169\n"
-    "pct_fg = #957fb8\n"
-    "[plan_long]\n"
-    "fg = #727169\n"
-    "pct_fg = #957fb8\n" },
-  { "solarized",
-    "[statusline]\n"
-    "separator_fg = #586e75\n"
-    "[cwd]\n"
-    "fg = #268bd2\n"
-    "[git]\n"
-    "fg = #268bd2\n"
-    "[model]\n"
-    "fg = #2aa198\n"
-    "effort_fg = #586e75\n"
-    "model_tag_fg = #002b36\n"
-    "[context]\n"
-    "fg = #586e75\n"
-    "used_fg = #2aa198\n"
-    "pct_fg = #2aa198\n"
-    "[plan_short]\n"
-    "fg = #586e75\n"
-    "pct_fg = #2aa198\n"
-    "[plan_long]\n"
-    "fg = #586e75\n"
-    "pct_fg = #2aa198\n" },
+  { "catppuccin", RGB(0xcba6f7), RGB(0x89b4fa), RGB(0xfab387), RGB(0x7f849c), RGB(0x1e1e2e) },
+  { "nord",       RGB(0x88c0d0), RGB(0x81a1c1), RGB(0x5e81ac), RGB(0x616e88), RGB(0x2e3440) },
+  { "gruvbox",    RGB(0xfabd2f), RGB(0x8ec07c), RGB(0xfe8019), RGB(0x928374), RGB(0x282828) },
+  { "tokyonight", RGB(0x7aa2f7), RGB(0xbb9af7), RGB(0xff9e64), RGB(0x737aa2), RGB(0x1a1b26) },
+  { "dracula",    RGB(0xbd93f9), RGB(0xff79c6), RGB(0x8be9fd), RGB(0x6272a4), RGB(0x282a36) },
+  { "onedark",    RGB(0x61afef), RGB(0xc678dd), RGB(0x98c379), RGB(0x767676), RGB(0x282c34) },
+  { "rosepine",   RGB(0xebbcba), RGB(0xc4a7e7), RGB(0x9ccfd8), RGB(0x6e6a86), RGB(0x191724) },
+  { "kanagawa",   RGB(0x7e9cd8), RGB(0x957fb8), RGB(0xe6c384), RGB(0x727169), RGB(0x1f1f28) },
+  { "solarized",  RGB(0x268bd2), RGB(0x2aa198), RGB(0xb58900), RGB(0x586e75), RGB(0x002b36) },
 };
+
+#undef RGB
 
 typedef struct
 {
@@ -379,7 +225,7 @@ static const profile_def_t profiles[PROFILE_COUNT] =
   },
 };
 
-static void load(config_t *, char *, size_t);
+static void lay(config_t *, const theme_t *);
 static profile_t profile_find(sv_t);
 static const char *profile_format(const profile_def_t *, glyphs_t, size_t);
 static void apply_profile(config_t *);
@@ -392,8 +238,10 @@ static void set_resets(section_cfg_t *, sv_t);
 static void set_theme(config_t *, sv_t);
 static void set_profile(config_t *, sv_t);
 static void set_glyphs(config_t *, sv_t);
+static void set_palette(config_t *, sv_t);
 static bool parse_u16(sv_t, uint16_t *);
 static bool parse_glyphs(sv_t, glyphs_t *);
+static bool parse_palette(sv_t, palette_t *);
 static bool token_color(section_cfg_t *, const section_desc_t *, sv_t, sv_t);
 static void set_color(color_t *, sv_t, sv_t);
 static void parse_order(config_t *, sv_t);

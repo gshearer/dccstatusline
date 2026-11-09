@@ -21,9 +21,9 @@ extern char **environ;
 static const char *dcc_bin;
 static const char *ref_path;
 
-static const char *const names[] =   // every preset, in --themes order
-  { "default", "catppuccin", "nord", "gruvbox", "tokyonight",
-    "dracula", "onedark", "rosepine", "kanagawa", "solarized" };
+static const char *const names[] =   // every preset, in the table's order
+  { "catppuccin", "nord", "gruvbox", "tokyonight", "dracula",
+    "onedark", "rosepine", "kanagawa", "solarized" };
 
 static bool run_bin(const char *const *, const char *, size_t, char *, size_t,
                     size_t *);
@@ -39,6 +39,8 @@ static void test_print_config(void);
 static void test_reference_is_default(void);
 static void test_themes(void);
 static void test_themes_overlay(void);
+static size_t styles(const char *, size_t);
+static void test_themes_palette(void);
 static void test_flags(void);
 
 // Every section the binary can fill without a repository under the cwd.
@@ -60,7 +62,7 @@ run_bin(const char *const *args, const char *in, size_t inlen,
   posix_spawn_file_actions_t fa;
   pid_t pid;
   int inpipe[2], outpipe[2], status;
-  char *argv[8] = { (char *)dcc_bin };
+  char *argv[12] = { (char *)dcc_bin };
   size_t used = 0, a;
 
   for(a = 0; args && args[a]; a++)
@@ -313,18 +315,15 @@ test_reference_is_default(void)
 }
 
 // --themes is what the plugin's theme skill reads the preset names from, one
-// per line, name first. Its stderr must stay silent: a preset value that fails
-// to parse says so there, and would otherwise ship as a quietly kept default.
+// per line, name first.
 static void
 test_themes(void)
 {
-  char out[16 * 1024], err[256];
-  size_t n = 0, en = 0, i, pos = 0;
+  char out[16 * 1024];
+  size_t n = 0, i, pos = 0;
 
-  CHECK(run_caught((const char *const[]){ "--themes", NULL }, "", 0, out,
-                   sizeof out, &n, err, sizeof err, &en),
-        "--themes: exit 0, stderr captured");
-  CHECK(!en, "--themes: stderr \"%.*s\"", (int)en, err);
+  CHECK(run_bin((const char *const[]){ "--themes", NULL }, "", 0, out, sizeof out, &n),
+        "--themes: exit 0");
 
   for(i = 0; i < sizeof names / sizeof names[0]; i++)
   {
@@ -380,6 +379,7 @@ test_themes_overlay(void)
     CHECK(seps == 5 && glyphs == 0,
           "--themes overlay: line %zu has %zu bullets, %zu glyphs",
           lines + 1, seps, glyphs);
+
     lines++;
     pos = end + 1;
   }
@@ -388,10 +388,89 @@ test_themes_overlay(void)
         "--themes overlay: %zu lines", lines);
 }
 
-// --theme, --profile and --glyphs stand in for the config keys of the same
-// name: the theme as if it were the config's first line, the profile and its
-// glyphs over whatever the config set. A value the binary does not know costs a
-// note, never the line. The payload sits in a repository, so the ⎇ can show.
+// The distinct styles one line paints in, the closing reset aside.
+static size_t
+styles(const char *line, size_t n)
+{
+  const char *seen[16];
+  size_t len[16], count = 0, i, j, k;
+
+  for(i = 0; i + 1 < n; i++)
+  {
+    if(line[i] != '\x1b' || line[i + 1] != '[') continue;
+
+    for(j = i + 2; j < n && line[j] != 'm'; j++)
+      ;
+
+    if(j - i - 2 == 1 && line[i + 2] == '0') continue;
+
+    for(k = 0; k < count; k++)
+      if(len[k] == j - i - 2 && memcmp(seen[k], line + i + 2, len[k]) == 0) break;
+
+    if(k == count && count < sizeof seen / sizeof seen[0])
+    {
+      seen[count] = line + i + 2;
+      len[count++] = j - i - 2;
+    }
+
+    i = j;
+  }
+
+  return(count);
+}
+
+// A palette overlay lays every preset again in it: the muted color and one,
+// two or three of the preset's own.
+static void
+test_themes_palette(void)
+{
+  static const struct
+  {
+    const char *overlay;
+    size_t styles;
+  } palettes[] =
+  {
+    { "[statusline]\npalette = monochrome\n", 2 },
+    { "[statusline]\npalette = duotone\n",    3 },
+    { "[statusline]\npalette = tritone\n",    4 },
+  };
+  char out[16 * 1024], err[256];
+  size_t p, n = 0, en = 0;
+
+  for(p = 0; p < sizeof palettes / sizeof palettes[0]; p++)
+  {
+    const char *const palette = palettes[p].overlay + sizeof "[statusline]\npalette = " - 1;
+    const int pl = (int)strcspn(palette, "\n");
+    size_t pos = 0, lines = 0;
+
+    CHECK(run_caught((const char *const[]){ "--themes", palettes[p].overlay, NULL },
+                     "", 0, out, sizeof out, &n, err, sizeof err, &en),
+          "--themes %.*s: exit 0, stderr captured", pl, palette);
+    CHECK(!en, "--themes %.*s: stderr \"%.*s\"", pl, palette, (int)en, err);
+
+    for(; pos < n && lines < sizeof names / sizeof names[0]; lines++)
+    {
+      const char *const eol = memchr(out + pos, '\n', n - pos);
+      const size_t end = eol ? (size_t)(eol - out) : n;
+      const size_t want = palettes[p].styles;
+
+      CHECK(styles(out + pos, end - pos) == want,
+            "--themes %.*s: %s paints %zu styles, want %zu", pl, palette, names[lines],
+            styles(out + pos, end - pos), want);
+
+      pos = end + 1;
+    }
+
+    CHECK(lines == sizeof names / sizeof names[0] && pos == n, "--themes %.*s: %zu lines",
+          pl, palette, lines);
+  }
+}
+
+// --theme, --palette, --profile and --glyphs stand in for the config keys of
+// the same name: the theme, in the palette --palette names, as if it were the
+// config's first line, the profile and its glyphs over whatever the config set.
+// A value the binary does not know costs a note, never the line. The payload
+// sits in a repository, so the ⎇ can show.
 static void
 test_flags(void)
 {
@@ -411,12 +490,14 @@ test_flags(void)
   static const char flagged[] =
     "[statusline]\n"
     "theme = dracula\n"   // yields to --theme, without a word
+    "palette = monochrome\n"   // and this to --palette
     "sections = context\n"
     "[cwd]\nfg = red\n"
     "[context]\nformat = {pct}\n";
   static const char keyed[] =
     "[statusline]\n"
     "theme = nord\n"
+    "palette = duotone\n"
     "profile = basic\n"
     "glyphs = on\n"
     "sections = context\n"
@@ -431,6 +512,7 @@ test_flags(void)
     { { "--theme", "nosuch", NULL },   "dccstatusline: --theme: unknown theme: nosuch\n" },
     { { "--profile", "sparse", NULL }, "dccstatusline: --profile: bad profile: sparse\n" },
     { { "--glyphs", "yes", NULL },     "dccstatusline: --glyphs: bad glyphs: yes\n" },
+    { { "--palette", "rainbow", NULL }, "dccstatusline: --palette: bad palette: rainbow\n" },
     { { "--theme", NULL },             "dccstatusline: ignored argument: --theme\n" },
   };
   char a[8192], b[8192], base[8192], got[8192], err[256];
@@ -447,8 +529,8 @@ test_flags(void)
   CHECK(f && fputs(keyed, f) >= 0 && fclose(f) == 0, "keyed config written");
 
   CHECK(setenv("DCCSTATUSLINE_CONFIG", "cli_flagged.ini", 1) == 0, "env");
-  CHECK(run_caught((const char *const[]){ "--theme", "nord", "--profile", "basic",
-                                          "--glyphs", "on", NULL },
+  CHECK(run_caught((const char *const[]){ "--theme", "nord", "--palette", "duotone",
+                                          "--profile", "basic", "--glyphs", "on", NULL },
                    repo_payload, sizeof repo_payload - 1, a, sizeof a, &an,
                    err, sizeof err, &en), "flags: exit 0, stderr captured");
   CHECK(!en, "flags: stderr \"%.*s\"", (int)en, err);
@@ -461,9 +543,10 @@ test_flags(void)
   CHECK(an > 0 && an == bn && memcmp(a, b, an) == 0,
         "flags render as the keys: \"%.*s\" vs \"%.*s\"",
         (int)an, a, (int)bn, b);
-  CHECK(has(a, an, "129;161;193m") && has(a, an, "\x1b[0;31m")
+  CHECK(has(a, an, "129;161;193m") && !has(a, an, "94;129;172m") && has(a, an, "\x1b[0;31m")
         && has(a, an, "\xe2\x8e\x87 ") && !has(a, an, "84,213"),
-        "nord under the red cwd, the basic line with its glyph: \"%.*s\"", (int)an, a);
+        "duotone nord under the red cwd, the basic line with its glyph: \"%.*s\"",
+        (int)an, a);
 
   CHECK(setenv("DCCSTATUSLINE_CONFIG", "cli_empty.ini", 1) == 0, "env");
   CHECK(run_bin(NULL, repo_payload, sizeof repo_payload - 1, base, sizeof base,
@@ -533,6 +616,7 @@ main(int argc, char **argv)
   test_reference_is_default();
   test_themes();
   test_themes_overlay();
+  test_themes_palette();
   test_flags();
 
   return(check_failures ? 1 : 0);

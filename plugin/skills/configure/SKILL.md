@@ -36,11 +36,13 @@ If nothing sets `statusLine`, or its command is something else, stop. Tell the
 user which file sets it and what it runs, and offer `/dccstatusline:setup` to
 switch to dccstatusline. Don't edit the config.
 
-Note any `--theme <name>`, `--profile <name>` or `--glyphs on|off|nerdfont` after the
-binary. Each flag stands in for the config key of the same name and wins over
-it: `--theme` acts as if `theme = <name>` were the config's first line, so the
-config's own `theme` key is skipped while its color keys still apply on top,
-`--profile` beats the config's `profile` key, and `--glyphs` its `glyphs` key. A change to a key a flag
+Note any `--theme <name>`, `--palette monochrome|duotone|tritone`,
+`--profile <name>` or `--glyphs on|off|nerdfont` after the binary. Each flag
+stands in for the config key of the same name and wins over it: `--theme` acts
+as if `theme = <name>` were the config's first line, so the config's own
+`theme` key is skipped while its color keys still apply on top, `--palette`
+lays that theme in its palette and skips the config's `palette` key, `--profile`
+beats the config's `profile` key, and `--glyphs` its `glyphs` key. A change to a key a flag
 overrides won't show on screen, and the preview below runs without the
 flags. When the request touches one, tell the user, and offer to drop the
 flag from the command in the file that set it.
@@ -83,6 +85,15 @@ U+E0B1, which tool output hides. Make the draft with `cp` and keep that line, or
 change it with `sed`: retyping the file loses the glyph. To set U+E0B1, write
 its bytes from the shell, `printf '\356\202\261'`. It needs a Nerd Font, so ask
 about the font first.
+
+`[statusline] palette = monochrome|duotone|tritone` decides how many of the
+theme's three colors the line wears beside its muted color: all three, with
+the third on the usage figures (`tritone`, the default), the first and second,
+or the first alone.
+It lays the theme again where its line sits, so it paints over any color key
+between it and `theme`. Keep it on the line right after `theme =`, with the
+color keys the user asks for below it. With no theme it does nothing: the
+stock colors take no palette.
 
 A profile, set by `profile =` or by `--profile`, is a whole line decided for
 the user. It replaces `[statusline] sections` and every `format`, wherever

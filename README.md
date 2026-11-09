@@ -10,7 +10,7 @@
 ![heap allocations: 0](https://img.shields.io/badge/heap_allocations-0-f38ba8)
 ![fuzzed: 3.3M execs](https://img.shields.io/badge/fuzzed-3.3M_execs-89dceb)
 
-<img src="assets/screenshot.svg" alt="dccstatusline in a terminal: default theme and a customized theme" width="860">
+<img src="assets/screenshot.svg" alt="dccstatusline in a terminal: the stock line and a customized theme" width="860">
 
 </div>
 
@@ -45,7 +45,8 @@ zero forks, zero heap allocations, one write, exit 0.
   foreground and background: 16 ANSI names, 256-palette numbers, or `#rrggbb`
 - 🌈 **themes** — `theme = nord`, or `--theme nord` on the command line,
   restyles the whole line: catppuccin, nord, gruvbox, tokyonight, dracula,
-  onedark, rosepine, kanagawa, or solarized; `dccstatusline --themes` prints
+  onedark, rosepine, kanagawa, or solarized, in one, two or three of its
+  colors (`palette = duotone`); `dccstatusline --themes` prints
   them side by side, and `/dccstatusline:theme`, a Claude Code mod, picks one
   from a live preview
 - 🧩 **format templates** — reorder and repunctuate each section freely;
@@ -90,7 +91,7 @@ points `statusLine` at it. Run it again to update. To customize, ask Claude
 for a change in plain words or run `/dccstatusline:configure`: it edits the
 config file described below and previews the line before writing anything.
 `configure` works just as well on a binary you installed by hand.
-`/dccstatusline:theme` picks a preset, a separator, a profile and glyphs from
+`/dccstatusline:theme` picks a preset, its palette, a separator, a profile and glyphs from
 a live preview. That picker is a Claude Code mod, a panel the plugin adds to the
 harness itself, so it can show the line in color while you choose.
 
@@ -211,51 +212,70 @@ and U+E0B4, in the fill's color; they need a Nerd Font. `{effort_plain}` is
 
 ### Themes
 
-Ten presets ship in the binary — `default`, `catppuccin` (Mocha), `nord`,
-`gruvbox` (dark), `tokyonight`, `dracula`, `onedark` (Atom One Dark),
-`rosepine`, `kanagawa` (Wave), and `solarized` (dark). Each named preset uses
-two of its theme's colors and one gray: one for the directory and branch,
-one for the model and the usage figures, and the gray for the rest. The model
-pill under `glyphs = nerdfont` fills with the second color and writes on the
-theme's background. A preset
-sets colors only: each keeps the default `│` separator and glyphs, and never
+Nine presets ship in the binary — `catppuccin` (Mocha), `nord`, `gruvbox`
+(dark), `tokyonight`, `dracula`, `onedark` (Atom One Dark), `rosepine`,
+`kanagawa` (Wave), and `solarized` (dark). Each preset has its
+three colors, a muted one and a background, and `[statusline] palette` decides
+how many of the three the line wears:
+
+- `tritone`, the default — the first for the directory and branch, the
+  second for the model, and the third for the usage figures
+- `duotone` — the same, with the usage figures in the model's color
+- `monochrome` — the first for all of it
+
+In every palette the theme's muted color paints the separator and the rest,
+and the model pill under `glyphs = nerdfont` fills with the model's color and
+writes on the theme's background. With no theme, the shipped default, the
+line keeps its stock colors, the ones in the screenshot: each section in its
+own of your terminal's 16 colors over bright black, which no palette touches.
+A preset sets
+colors only: each keeps the default `│` separator and glyphs, and never
 changes which sections show or how the cwd is shortened. Pick one with a
 single key:
 
 ```ini
 [statusline]
 theme = nord
+palette = duotone                  # the figures in the model's blue
 
 [cwd]
 fg = red                           # keys after the theme line win over it
 ```
 
 The preset applies where its line sits, so keep it first, and tweak it with
-keys below. A config copied whole from `--print-config` restates every color
+keys below. A `palette` line lays the theme again where it sits, painting over
+any color key above it, so keep it right under `theme`. A config copied whole from `--print-config` restates every color
 and paints over any theme, so delete the color keys you didn't change.
 `dccstatusline --themes` prints every preset side by side, and
-`--themes "<ini>"` lays INI keys over each one first. It has to be the first
-argument and the flags below don't reach it, so a profile or glyphs go in the
-INI.
+`--themes "<ini>"` lays INI keys over each preset first. It has to be the
+first argument and the flags below don't reach it, so a palette, a profile or
+glyphs go in the INI.
 
-<img src="assets/themes.png" alt="dccstatusline --themes printing all ten presets, one per line" width="860">
+<img src="assets/themes.png" alt="dccstatusline --themes printing every preset, one per line" width="860">
 
 With the plugin, `/dccstatusline:theme` opens a picker. The picker is a Claude
 Code mod: `plugin/hooks/register.tsx` adds it to the harness itself as a
 panel, because Claude Code hides the status line while a menu is open and
 prints color codes raw inside one. The panel is a preview box over a row each
-for the theme, separator, profile and glyphs, starting at what your config
-sets. Enter moves a row to its next value and redraws the preview, and Enter on
-the Apply button switches your status line to them. The separator row includes
-a thin arrow, U+E0B1, that needs a Nerd Font. The profile row picks none, which
-writes no `profile` key, basic or detailed. The glyphs row is the profile's
-`glyphs` key, off, on or nerdfont; with no profile it is dimmed and does
-nothing. The presets use `#rrggbb` colors, so they look right only in a
+for the theme, palette, separator, profile and glyphs, starting at what your
+config sets. Enter moves a row to its next value and redraws the preview, and
+Enter on the Apply button switches your status line to them. The palette row
+picks tritone, which writes no `palette` key, duotone or monochrome. The
+separator row includes a thin arrow, U+E0B1, that needs a Nerd Font. The
+profile row picks basic or detailed, and starts at basic when your config has
+no profile, so Apply on a preset always writes one in place of your own
+`sections` and formats; to keep those, use `/dccstatusline:configure` instead.
+The glyphs row is the profile's `glyphs` key, off, on or nerdfont. The theme
+row starts at `no theme`, which is no theme but the way back to the stock
+line; Apply writes it as no `theme` key at all. Every row
+works on every preset. The options are a theme's, so on `no theme` the preview is the stock
+line and every row below the theme row dims, reads `pick a theme`, and keeps
+its value for when you step back to a preset. The presets use `#rrggbb` colors, so they look right only in a
 truecolor terminal. Where Claude Code doesn't load the mod, or the panel can't
 open, `/dccstatusline:theme` shows the `--themes` printout and asks with a menu
 instead.
 
-<img src="assets/picker.gif" alt="the /dccstatusline:theme picker in Claude Code: cycling the theme, separator, profile and glyphs rows while the preview redraws, then pressing Apply and the status line switching to nord" width="860">
+<img src="assets/picker.gif" alt="the /dccstatusline:theme picker in Claude Code: starting at no theme, stepping the theme, palette, separator, profile and glyphs rows while the preview redraws, then pressing Apply and the status line switching to nord in duotone with Nerd Font glyphs" width="860">
 
 ### Profiles and flags
 
@@ -288,18 +308,19 @@ or whatever your `sections` and `format` keys make of it. The `glyphs` key
 does nothing there: the glyphs are the formats' own, so a Nerd Font glyph goes
 in the `format` itself.
 
-`--theme <name>`, `--profile <name>` and `--glyphs on|off|nerdfont` stand in for those
-three keys on the command line, so a project's own settings can restyle the
+`--theme <name>`, `--palette monochrome|duotone|tritone`, `--profile <name>`
+and `--glyphs on|off|nerdfont` stand in for those four keys on the command line, so a project's own settings can restyle the
 line without a config of its own:
 
 ```json
-"statusLine": { "type": "command", "command": "dccstatusline --theme nord --profile basic --glyphs on" }
+"statusLine": { "type": "command", "command": "dccstatusline --theme nord --palette duotone --profile basic --glyphs on" }
 ```
 
 A flag wins over its key. `--theme nord` acts as if `theme = nord` were the
 config's first line: the config's own `theme` key is skipped, and its color
-keys still apply on top. `--profile` beats `profile =`, and `--glyphs` beats
-`glyphs =`. An unknown value gets one note on stderr and the config's key
+keys still apply on top. `--palette` lays that theme in its palette, and the
+config's `palette` key is skipped. `--profile` beats `profile =`, and `--glyphs`
+beats `glyphs =`. An unknown value gets one note on stderr and the config's key
 stands; the line still draws.
 
 ### Keeping the cwd short
