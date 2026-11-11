@@ -99,6 +99,43 @@ the scratch buffers has to take the refusal paths too. CI builds all three
 harnesses and replays every committed unit once (`-runs=0`) on each push; new
 fuzzing stays a local job.
 
+## Benchmarking
+
+`tools/bench.sh` reproduces the README's "Measured, not promised" figures. It runs on
+Linux, needs `musl-gcc` and `curl` (plus `strace` for the syscall count), and finishes
+in under a minute:
+
+```sh
+tools/bench.sh                # fresh work dir under $TMPDIR, printed at the end
+tools/bench.sh /tmp/dccbench  # reuse one: this tree rebuilds incrementally
+```
+
+It downloads the latest static musl release, checks its sha256, and builds this tree the
+same way. The two are timed in alternation, run by run, so drift lands on both alike and
+the gap between their medians is what your tree changes. A dynamic glibc build (the
+README's fallback install line) and an empty static C program are timed on their own.
+Each run is one full refresh, timed by `bench` (`tools/bench.c`; `ninja bench` builds
+it, nothing installs it): spawn, payload on stdin, output drained, exit reaped. The
+script prints each repeat's median, the page faults, the syscall count and the release
+binary's size, and keeps the raw output in `results.txt`. `RUNS` (5000), `REPEATS` (3),
+`CPU` (the core it pins to, 2) and `TAG` (`latest`, or a release such as `v0.0.7`) tune
+it. On a quiet machine, medians that differ by under ~0.5 µs are noise.
+
+Three things skew the numbers when timing by hand:
+
+- The `.git` search starts from the payload's `cwd`, not the shell's. The script
+  writes one payload inside this repository and one outside any, where the search
+  climbs to `/`.
+- Alternate only binaries of similar speed. Interleaved with the dynamic build, the
+  release's median rises from ~40 µs to ~50 µs, which is why the script times the
+  slow binaries alone.
+- A static build from your distribution's musl is not the release binary. On Arch it
+  comes out ~20% larger than the Alpine-built asset, so the README quotes the
+  asset's size.
+
+Most of a refresh is the kernel starting a process: the empty program alone takes
+~22 µs of the ~40.
+
 ## Versioning
 
 The build string is `dccstatusline v<version>`, plus ` (build #N)` in a tree that keeps a
