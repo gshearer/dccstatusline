@@ -404,4 +404,5 @@ With thanks to everyone whose pull requests have been merged:
   ([#6](https://github.com/gshearer/dccstatusline/pull/6)), themes, profiles,
   glyphs and the theme picker
   ([#7](https://github.com/gshearer/dccstatusline/pull/7)), theme palettes
-  ([#8](https://github.com/gshearer/dccstatusline/pull/8))
+  ([#8](https://github.com/gshearer/dccstatusline/pull/8)), measured figures
+  and the benchmark ([#9](https://github.com/gshearer/dccstatusline/pull/9))
