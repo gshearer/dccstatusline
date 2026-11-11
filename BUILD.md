@@ -154,6 +154,36 @@ meson setup build-release -Doptimization=2 -Ddebug=false -Db_lto=true --prefix ~
 ninja -C build-release install    # installs ~/.local/bin/dccstatusline
 ```
 
+## Packaging
+
+Notes for packaging dccstatusline for a distribution. The AUR
+[PKGBUILD](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=dccstatusline) is a
+worked example.
+
+- **Source:** the tag tarball, `archive/refs/tags/v<version>.tar.gz`. It carries no build
+  counter, so it builds as plain `v<version>`, byte-identical from one build to the next.
+- **Dependencies:** meson, ninja and a C23 compiler to build (see Requirements); only
+  libc at run time.
+- **Flags:** `werror=true` is the default because it is the dev and CI contract. Pass
+  `-Dwerror=false`, so that a warning a newer compiler invents cannot fail a user's build.
+  Your distribution's `CFLAGS` and `LDFLAGS` are honored. On Linux, `meson setup` fails if
+  the compiler cannot honor `-fstack-protector-strong` and `-fstack-clash-protection`.
+- **Check:** `meson test -C <dir>` runs the 9 suites in under a second, with no network.
+- **Install:** `meson install` installs one file, `bin/dccstatusline`; the license is
+  yours to add. The fuzz harnesses and `bench` are not built by default. `plugin/` does
+  not belong in the package: the Claude Code plugin fetches its own binary, and users of
+  a packaged one point `statusLine` at it directly (see Wiring into Claude Code).
+- **Linking:** link dynamically, as your distribution expects. A dynamic build takes
+  ~130 µs a refresh, against ~40 µs for the static release binaries. The difference is
+  the dynamic loader mapping and relocating the shared libc before `main`, not
+  dccstatusline's own work, and neither figure is visible beside Claude Code's 300 ms
+  debounce. In return, libc fixes reach the binary with your libc updates, and on glibc
+  it keeps `_FORTIFY_SOURCE` (see Release binaries). A static musl build (`build-musl`
+  above) is fine where your distribution allows one; nothing depends on it.
+
+Once a package is in, open an issue or a pull request, and the README will list it
+beside the AUR.
+
 ## Wiring into Claude Code
 
 Add to `~/.claude/settings.json`:

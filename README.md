@@ -67,8 +67,11 @@ zero forks, zero heap allocations, one write, exit 0.
 <sub>Median of 5,000 runs including process spawn: the static musl v0.0.7
 release binary, cwd inside a git repository, no config file, AMD Ryzen 9
 9950X3D, Linux. An empty static C program takes ~22 µs on the same machine, so
-most of that is the kernel starting a process. Your numbers will vary; the
-order of magnitude won't. `tools/bench.sh` measures them on your machine; see
+most of that is the kernel starting a process. Distribution packages link
+dynamically and take ~130 µs: the extra is the dynamic loader starting up, not
+dccstatusline, and either figure is well under a thousandth of Claude Code's
+300 ms debounce. Your numbers will vary with the machine; the order of
+magnitude won't. `tools/bench.sh` measures them on your machine; see
 [BUILD.md](BUILD.md#benchmarking).</sub>
 
 A failed refresh can never blank your status line: on malformed, truncated, or
@@ -101,8 +104,11 @@ harness itself, so it can show the line in color while you choose.
 ### Arch Linux
 
 [`dccstatusline`](https://aur.archlinux.org/packages/dccstatusline) is in the
-AUR, built from the release tarball with your distribution's own hardening
-flags and kept current through your usual updates:
+AUR, built from the release tarball with Arch's own build flags and kept
+current through your usual updates. Like any distribution package it links
+dynamically against the system libc, so libc fixes reach it as they land, at
+~130 µs a refresh against the static binary's ~40
+([why](BUILD.md#packaging)):
 
 ```sh
 yay -S dccstatusline    # or any AUR helper
