@@ -2,7 +2,7 @@
 
 # dccstatusline
 
-**Doc's Claude Code Status Line — pure C, zero dependencies, ~250 microseconds.**
+**Doc's Claude Code Status Line — pure C, zero dependencies, ~40 microseconds.**
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-a6e3a1)](LICENSE)
 ![language: C (gnu23)](https://img.shields.io/badge/C-gnu23-89b4fa)
@@ -16,8 +16,8 @@
 
 Claude Code redraws its status line on every conversation beat — debounced to
 300 ms, killing any refresh that dawdles. Most status lines answer with a shell
-script that forks `jq`, forks `git`, and hopes. **dccstatusline answers with a
-43 KB C binary that is done in about a quarter of a millisecond**: one read,
+script that forks `jq`, forks `git`, and hopes. **dccstatusline answers with an
+86 KB static C binary that is done in about 40 microseconds**: one read,
 zero forks, zero heap allocations, one write, exit 0.
 
 ## What you get
@@ -58,15 +58,18 @@ zero forks, zero heap allocations, one write, exit 0.
 
 | metric | value |
 |---|---|
-| full refresh cycle — spawn, parse, render, exit | **~250 µs** |
-| syscalls per refresh | **49** |
+| full refresh cycle — spawn, parse, render, exit | **~40 µs** |
+| syscalls per refresh | **15** |
 | heap allocations | **0** |
-| stripped release binary | **43 KB** |
+| stripped release binary | **86 KB** |
 | libFuzzer executions through the full render path, ASan+UBSan, findings | **3.3 M, zero** |
 
-<sub>2000-run average including process spawn, release build (`-O2`, LTO),
-AMD Ryzen 9 9950X, Linux. Your numbers will vary; the order of magnitude
-won't.</sub>
+<sub>Median of 5,000 runs including process spawn: the static musl v0.0.7
+release binary, cwd inside a git repository, no config file, AMD Ryzen 9
+9950X3D, Linux. An empty static C program takes ~22 µs on the same machine, so
+most of that is the kernel starting a process. Your numbers will vary; the
+order of magnitude won't. `tools/bench.sh` measures them on your machine; see
+[BUILD.md](BUILD.md#benchmarking).</sub>
 
 A failed refresh can never blank your status line: on malformed, truncated, or
 hostile input the binary still prints a fallback line and still exits 0 — a
@@ -136,14 +139,20 @@ run it until you clear the flag once:
 xattr -d com.apple.quarantine ~/.local/bin/dccstatusline
 ```
 
-Or build from source:
+Or build from source. On Linux, build it static against musl like the
+release binaries (needs the `musl` package for `musl-gcc`):
 
 ```sh
 git clone https://github.com/gshearer/dccstatusline.git
 cd dccstatusline
-meson setup build-release -Doptimization=2 -Ddebug=false -Db_lto=true --prefix ~/.local
+CC=musl-gcc meson setup build-release -Doptimization=2 -Ddebug=false -Db_lto=true \
+  -Dc_link_args=-static --prefix ~/.local
 ninja -C build-release install
 ```
+
+Without musl, or on macOS, leave out `CC=musl-gcc` and `-Dc_link_args=-static`.
+The binary behaves the same, but dynamic linking costs about 130 µs per
+refresh instead of about 40.
 
 Then point Claude Code at it in `~/.claude/settings.json`:
 

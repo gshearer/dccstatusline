@@ -67,5 +67,9 @@ endif
 buildnum = executable('buildnum', 'tools' / 'buildnum.c', native: true)
 embed = executable('embed', 'tools' / 'embed.c', native: true)
 
+# Refresh-cycle timer that tools/bench.sh drives; see BUILD.md. Built only on
+# request (ninja bench) and never installed.
+executable('bench', 'tools' / 'bench.c', native: true, build_by_default: false)
+
 subdir('src')
 subdir('test')

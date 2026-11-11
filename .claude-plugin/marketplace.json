@@ -6,7 +6,7 @@
     {
       "name": "dccstatusline",
       "source": "./plugin",
-      "description": "Pure-C Claude Code status line: zero dependencies, ~250 µs per refresh"
+      "description": "Pure-C Claude Code status line: zero dependencies, ~40 µs per refresh"
     }
   ]
 }
