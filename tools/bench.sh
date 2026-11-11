@@ -124,16 +124,19 @@ measure()
   i=1
 
   while [ "$i" -le "$repeats" ]; do
-    pinned ./bench -n "$runs" -p "$json" "$@" | tee -a results.txt |
-      awk -v s="$scenario" '{
-        for(i = 1; i < NF; i++)
-        {
-          if($i == "med") med = $(i + 1)
-          if($i == "faults") faults = $(i + 1)
-        }
-        sub("^\\./", "", $1)
-        print s, $1, med, faults
-      }' >> medians.txt
+    # Not a pipeline: sh reports only its last command, so a failed run would
+    # slip past set -e and leave a blank row in the table.
+    pinned ./bench -n "$runs" -p "$json" "$@" > run.txt
+    cat run.txt >> results.txt
+    awk -v s="$scenario" '{
+      for(i = 1; i < NF; i++)
+      {
+        if($i == "med") med = $(i + 1)
+        if($i == "faults") faults = $(i + 1)
+      }
+      sub("^\\./", "", $1)
+      print s, $1, med, faults
+    }' run.txt >> medians.txt
     i=$((i + 1))
   done
 }

@@ -49,7 +49,7 @@ run_once(const char *bin, const char *in, size_t inlen, uint64_t *ns,
   posix_spawn_file_actions_t fa;
   struct rusage ru;
   pid_t pid;
-  int inpipe[2], outpipe[2], status;
+  int inpipe[2], outpipe[2], status, err;
   char *argv[] = { (char *)bin, NULL };
   char sink[8192];
   uint64_t t0;
@@ -73,14 +73,21 @@ run_once(const char *bin, const char *in, size_t inlen, uint64_t *ns,
 
   t0 = now_ns();
 
-  if(posix_spawn(&pid, bin, &fa, NULL, argv, environ) != 0)
+  err = posix_spawn(&pid, bin, &fa, NULL, argv, environ);
+  posix_spawn_file_actions_destroy(&fa);
+
+  // posix_spawn returns its error rather than setting errno.
+  if(err != 0)
   {
-    posix_spawn_file_actions_destroy(&fa);
+    fprintf(stderr, "bench: %s: %s\n", bin, strerror(err));
+    close(inpipe[0]);
+    close(inpipe[1]);
+    close(outpipe[0]);
+    close(outpipe[1]);
 
     return(false);
   }
 
-  posix_spawn_file_actions_destroy(&fa);
   close(inpipe[0]);
   close(outpipe[1]);
 
